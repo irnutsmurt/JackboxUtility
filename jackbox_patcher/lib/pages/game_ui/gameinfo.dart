@@ -645,11 +645,12 @@ class _GameInfoWidgetState extends State<GameInfoWidget> implements EventObserve
       }
       if (event is DialogEvent) {
         if (event.type == DialogEventType.PATCH_AVAILABLE) {
-          bool shouldShowPatchList =
-              await showDialog(context: context, builder: (context) => PatchAvailableDialog()) as bool;
-          if (shouldShowPatchList) {
+          // Null when the dialog is closed without choosing (e.g. with Esc)
+          bool? shouldShowPatchList =
+              await showDialog<bool>(context: context, builder: (context) => PatchAvailableDialog());
+          if (shouldShowPatchList == true) {
             Navigator.pushNamed(context, "/patch");
-          } else {
+          } else if (shouldShowPatchList == false) {
             viewModel.launchGame(force: true);
           }
         }
