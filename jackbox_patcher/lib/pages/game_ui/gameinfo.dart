@@ -25,6 +25,7 @@ import 'package:jackbox_patcher/services/video/video_service.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 import '../../components/closable_route_with_esc.dart';
+import '../../components/focusable_tap.dart';
 import '../../components/game_info/special_game_info.dart';
 import '../../model/user_model/user_jackbox_game.dart';
 import '../../model/user_model/user_jackbox_pack.dart';
@@ -316,7 +317,8 @@ class _GameInfoWidgetState extends State<GameInfoWidget> implements EventObserve
                     padding: const EdgeInsets.all(10),
                     child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                       StarsRateWidget(
-                          key: UniqueKey(),
+                          // Only rebuilt when the game changes, so a focused star keeps the focus
+                          key: ValueKey(viewModel.selectedUserGame.game.id),
                           defaultStars: viewModel.selectedUserGame.stars,
                           onStarChanged: (int stars) {
                             setState(() {
@@ -349,8 +351,8 @@ class _GameInfoWidgetState extends State<GameInfoWidget> implements EventObserve
     return !viewModel.selectedUserPack.owned
         ? (viewModel.selectedUserPack.pack.storeLinks != null
             ? _buildStoreLinkButtonsList()
-            : GestureDetector(
-                onTap: () async {
+            : FocusableTap(
+                onPressed: () async {
                   await Navigator.pushNamed(context, "/settings/packs");
                   setState(() {});
                 },
@@ -441,7 +443,12 @@ class _GameInfoWidgetState extends State<GameInfoWidget> implements EventObserve
   Widget _buildLauncherButton() {
     return FilledButton(
         style: ButtonStyle(backgroundColor: ButtonState.all(Colors.green)),
-        onPressed: viewModel.launchingStatus == GameInfoLaunchingStatus.WAITING ? viewModel.launchGame : null,
+        // Never disabled (a disabled button loses the focus), presses are ignored while launching instead
+        onPressed: () {
+          if (viewModel.launchingStatus == GameInfoLaunchingStatus.WAITING) {
+            viewModel.launchGame();
+          }
+        },
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

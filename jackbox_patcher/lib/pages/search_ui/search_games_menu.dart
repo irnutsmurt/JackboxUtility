@@ -40,7 +40,6 @@ class _SearchGameMenuWidgetState extends State<SearchGameMenuWidget> {
   List<IntFilter> intFilters = [];
   Key gamePaneKey = UniqueKey();
   bool filterPanedExpanded = false;
-  bool shouldCloseOnEsc = true;
 
   @override
   void initState() {
@@ -61,7 +60,6 @@ class _SearchGameMenuWidgetState extends State<SearchGameMenuWidget> {
   Widget build(BuildContext context) {
     Typography typography = FluentTheme.of(context).typography;
     return ClosableRouteWithEsc(
-        close: shouldCloseOnEsc,
         closeSFX: true,
         child: NavigationView(
           appBar: NavigationAppBar(
@@ -344,17 +342,10 @@ class _SearchGameMenuWidgetState extends State<SearchGameMenuWidget> {
         placeholder: TranslationsHelper().appLocalizations!.search,
         suffix: const Icon(FluentIcons.search),
         controller: _searchController,
-        onTap: () {
-          setState(() {
-            shouldCloseOnEsc = false;
-          });
-        },
         onTapOutside: (event) {
           print("Tap outside");
-          setState(() {
-            shouldCloseOnEsc = true;
-          });
-          FocusScope.of(context).unfocus();
+          // Only unfocus the text field, the page must keep the focus to be closed with Esc
+          FocusManager.instance.primaryFocus?.unfocus();
         },
         onChanged: (String value) {
           setState(() {});

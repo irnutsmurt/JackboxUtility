@@ -10,6 +10,7 @@ import 'package:jackbox_patcher/services/audio/sfx_service.dart';
 import 'package:jackbox_patcher/services/user/user_data.dart';
 
 import '../../components/closable_route_with_esc.dart';
+import '../../components/focusable_tap.dart';
 import '../../components/stars_rate.dart';
 import '../../model/misc/audio/SFXEnum.dart';
 import '../../services/discord/discord_service.dart';
@@ -285,6 +286,7 @@ class _SearchGameWidgetState extends State<SearchGameWidget> {
                 crossAxisCount: _getGamesByGrid(),
                 children: gamesWithSeparator
                     .map((game) => SearchGameGameWidget(
+                          key: ValueKey((game["game"] as UserJackboxGame).game.id),
                           pack: game["pack"] as UserJackboxPack,
                           game: game["game"] as UserJackboxGame,
                           showAllPacks: widget.showAllPacks,
@@ -295,9 +297,8 @@ class _SearchGameWidgetState extends State<SearchGameWidget> {
                                     p: gamesWithSeparator[index]["pack"] as UserJackboxPack
                                   )),
                           parentReload: () {
-                            setState(() {
-                              key = UniqueKey();
-                            });
+                            // The grid isn't rebuilt from scratch, so the focus can come back on the game
+                            setState(() {});
                             if (widget.parentReload != null) {
                               widget.parentReload!();
                             }
@@ -320,6 +321,7 @@ class _SearchGameWidgetState extends State<SearchGameWidget> {
                   crossAxisCount: _getGamesByGrid(),
                   children: games
                       .map((game) => SearchGameGameWidget(
+                          key: ValueKey((game["game"] as UserJackboxGame).game.id),
                           pack: game["pack"] as UserJackboxPack,
                           game: game["game"] as UserJackboxGame,
                           showAllPacks: widget.showAllPacks,
@@ -330,9 +332,8 @@ class _SearchGameWidgetState extends State<SearchGameWidget> {
                                     p: games[index]["pack"] as UserJackboxPack
                                   )),
                           parentReload: () {
-                            setState(() {
-                              key = UniqueKey();
-                            });
+                            // The grid isn't rebuilt from scratch, so the focus can come back on the game
+                            setState(() {});
 
                             if (widget.parentReload != null) {
                               widget.parentReload!();
@@ -456,7 +457,8 @@ class SearchGameGameWidget extends StatefulWidget {
       required this.showAllPacks,
       this.parentReload,
       this.allAvailableGames,
-      this.disableHero})
+      this.disableHero,
+      this.autofocus = false})
       : super(key: key);
 
   final UserJackboxPack pack;
@@ -465,6 +467,7 @@ class SearchGameGameWidget extends StatefulWidget {
   final Function? parentReload;
   final bool? disableHero;
   final List<({UserJackboxGame g, UserJackboxPack p})>? allAvailableGames;
+  final bool autofocus;
   @override
   State<SearchGameGameWidget> createState() => _SearchGameGameWidgetState();
 }
@@ -472,32 +475,35 @@ class SearchGameGameWidget extends StatefulWidget {
 class _SearchGameGameWidgetState extends State<SearchGameGameWidget> {
   bool isFirstTime = true;
   bool smallInfoVisible = false;
+  bool focused = false;
   @override
   Widget build(BuildContext context) {
     var gameInfo = widget.game.game.info;
     return MouseRegion(
         cursor: SystemMouseCursors.click,
-        child: AspectRatio(
+        child: FocusableTap(
+            autofocus: widget.autofocus,
+            onPressed: _openGame,
+            // Show the game info when it's focused with the keyboard or a controller, like on mouse hover
+            onFocusChange: (bool value) => setState(() {
+                  isFirstTime = false;
+                  focused = value;
+                  if (value) {
+                    SFXService().playSFX(SFX.HOVER_OVER_BANNER);
+                  }
+                }),
+            child: AspectRatio(
           aspectRatio: 2.17,
           child: ClipRRect(
               borderRadius: BorderRadius.circular(8.0),
               child: TweenAnimationBuilder<double>(
                   tween: Tween<double>(
-                    begin: isFirstTime ? 0 : (smallInfoVisible ? 0 : 1),
-                    end: isFirstTime ? 0 : (smallInfoVisible ? 1 : 0),
+                    begin: isFirstTime ? 0 : (smallInfoVisible || focused ? 0 : 1),
+                    end: isFirstTime ? 0 : (smallInfoVisible || focused ? 1 : 0),
                   ),
                   duration: const Duration(milliseconds: 200),
                   builder: (BuildContext context, double opacity, Widget? child) {
-                    return GestureDetector(
-                        onTap: () async {
-                          await Navigator.pushNamed(context, "/game",
-                              arguments: [widget.pack, widget.game, widget.showAllPacks, widget.allAvailableGames]);
-                          if (widget.parentReload != null) {
-                            widget.parentReload!();
-                          }
-                          _startDiscordrichPresence();
-                        },
-                        child: MouseRegion(
+                    return MouseRegion(
                           onEnter: (a) => setState(() {
                             isFirstTime = false;
                             smallInfoVisible = true;
@@ -591,6 +597,9 @@ class _SearchGameGameWidgetState extends State<SearchGameGameWidget> {
                                               child: Padding(
                                                   padding: EdgeInsets.only(right: 8),
                                                   child: Button(
+                                                    // Only for the mouse, the keyboard and the controller open the
+                                                    // game page so the patch check isn't skipped
+                                                    focusable: false,
                                                     style: ButtonStyle(
                                                       backgroundColor: ButtonState.all<Color>(Colors.green),
                                                     ),
@@ -604,9 +613,18 @@ class _SearchGameGameWidgetState extends State<SearchGameGameWidget> {
                                   ]),
                             ),
                           ]),
-                        ));
+                        );
                   })),
-        ));
+        )));
+  }
+
+  Future<void> _openGame() async {
+    await Navigator.pushNamed(context, "/game",
+        arguments: [widget.pack, widget.game, widget.showAllPacks, widget.allAvailableGames]);
+    if (widget.parentReload != null) {
+      widget.parentReload!();
+    }
+    _startDiscordrichPresence();
   }
 
   void _startDiscordrichPresence() {
