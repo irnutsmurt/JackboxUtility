@@ -850,4 +850,11 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get patch_missing_before_launching_launch => 'Uruchom Grę';
+
+  @override
+  String get settings_controller_support_title => 'Controller Support';
+
+  @override
+  String get settings_controller_support_description =>
+      'Navigate the app with an Xbox controller: A to select, B to go back, LB and RB to switch games.';
 }

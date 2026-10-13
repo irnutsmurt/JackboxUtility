@@ -21,6 +21,7 @@ import 'package:jackbox_patcher/mvvm/observer.dart';
 import 'package:jackbox_patcher/pages/game_ui/gameinfo_view_model.dart';
 import 'package:jackbox_patcher/services/audio/sfx_service.dart';
 import 'package:jackbox_patcher/services/error/error.dart';
+import 'package:jackbox_patcher/services/gamepad/gamepad_service.dart';
 import 'package:jackbox_patcher/services/video/video_service.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
@@ -443,6 +444,8 @@ class _GameInfoWidgetState extends State<GameInfoWidget> implements EventObserve
   Widget _buildLauncherButton() {
     return FilledButton(
         style: ButtonStyle(backgroundColor: ButtonState.all(Colors.green)),
+        // With a controller, start on this button so the game can be launched right away
+        autofocus: GamepadService().padConnected.value,
         // Never disabled (a disabled button loses the focus), presses are ignored while launching instead
         onPressed: () {
           if (viewModel.launchingStatus == GameInfoLaunchingStatus.WAITING) {

@@ -7,6 +7,7 @@ import 'package:jackbox_patcher/model/user_model/user_jackbox_game.dart';
 import 'package:jackbox_patcher/model/user_model/user_jackbox_pack.dart';
 import 'package:jackbox_patcher/services/api_utility/api_service.dart';
 import 'package:jackbox_patcher/services/audio/sfx_service.dart';
+import 'package:jackbox_patcher/services/gamepad/gamepad_service.dart';
 import 'package:jackbox_patcher/services/user/user_data.dart';
 
 import '../../components/closable_route_with_esc.dart';
@@ -325,6 +326,8 @@ class _SearchGameWidgetState extends State<SearchGameWidget> {
                           pack: game["pack"] as UserJackboxPack,
                           game: game["game"] as UserJackboxGame,
                           showAllPacks: widget.showAllPacks,
+                          // With a controller, start on the first game so it can be opened right away
+                          autofocus: game == games.first && GamepadService().padConnected.value,
                           allAvailableGames: List.generate(
                               games.length,
                               (index) => (

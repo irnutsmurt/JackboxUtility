@@ -595,5 +595,9 @@
   "patch_missing_before_launching_install": "Install Patch",
   "@patch_missing_before_launching_install": {},
   "patch_missing_before_launching_launch": "Launch Game",
-  "@patch_missing_before_launching_launch": {}
+  "@patch_missing_before_launching_launch": {},
+  "settings_controller_support_title": "Controller Support",
+  "@settings_controller_support_title": {},
+  "settings_controller_support_description": "Navigate the app with an Xbox controller: A to select, B to go back, LB and RB to switch games.",
+  "@settings_controller_support_description": {}
 }

@@ -82,6 +82,18 @@ class _AppBehaviorSettingsState extends State<AppBehaviorSettings> {
                   isChecked: UserData().settings.isDiscordRPCActivated,
                   setter: UserData().settings.setDiscordRPC,
                   parentReload: () => setState(() {})) : const SizedBox(height: 0),
+              SizedBox(height: (Platform.isWindows ? 10 : 0)),
+              // controller support is only available on Windows
+              Platform.isWindows ? BooleanSetting(
+                  title: TranslationsHelper()
+                      .appLocalizations!
+                      .settings_controller_support_title,
+                  description: TranslationsHelper()
+                      .appLocalizations!
+                      .settings_controller_support_description,
+                  isChecked: UserData().settings.isControllerSupportActivated,
+                  setter: UserData().settings.setControllerSupport,
+                  parentReload: () => setState(() {})) : const SizedBox(height: 0),
               const SizedBox(height: 10),
               BooleanSetting(
                   title: TranslationsHelper()

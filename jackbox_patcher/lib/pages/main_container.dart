@@ -7,6 +7,7 @@ import 'package:jackbox_patcher/pages/loading_container.dart';
 import 'package:jackbox_patcher/services/api_utility/api_service.dart';
 import 'package:jackbox_patcher/services/device/device.dart';
 import 'package:jackbox_patcher/services/downloader/downloader_service.dart';
+import 'package:jackbox_patcher/services/gamepad/gamepad_service.dart';
 import 'package:jackbox_patcher/services/translations/translations_helper.dart';
 import 'package:jackbox_patcher/services/user/initial_load.dart';
 import 'package:jackbox_patcher/services/user/user_data.dart';
@@ -156,6 +157,8 @@ class _MainContainerState extends State<MainContainer> with WindowListener {
                       style: ButtonStyle(
                           backgroundColor: ButtonState.all(Colors.green),
                           shape: ButtonState.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)))),
+                      // With a controller, start on this button
+                      autofocus: GamepadService().padConnected.value,
                       onPressed: () async {
                         await Navigator.pushNamed(context, "/searchMenu");
                         DiscordService().launchMenuPresence();

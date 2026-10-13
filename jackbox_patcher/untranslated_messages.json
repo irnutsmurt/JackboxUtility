@@ -3,14 +3,33 @@
     "patch_missing_before_launching_title",
     "patch_missing_before_launching_description",
     "patch_missing_before_launching_install",
-    "patch_missing_before_launching_launch"
+    "patch_missing_before_launching_launch",
+    "settings_controller_support_title",
+    "settings_controller_support_description"
   ],
 
   "ca": [
     "patch_missing_before_launching_title",
     "patch_missing_before_launching_description",
     "patch_missing_before_launching_install",
-    "patch_missing_before_launching_launch"
+    "patch_missing_before_launching_launch",
+    "settings_controller_support_title",
+    "settings_controller_support_description"
+  ],
+
+  "de": [
+    "settings_controller_support_title",
+    "settings_controller_support_description"
+  ],
+
+  "es": [
+    "settings_controller_support_title",
+    "settings_controller_support_description"
+  ],
+
+  "fr": [
+    "settings_controller_support_title",
+    "settings_controller_support_description"
   ],
 
   "nb": [
@@ -242,7 +261,9 @@
     "patch_missing_before_launching_title",
     "patch_missing_before_launching_description",
     "patch_missing_before_launching_install",
-    "patch_missing_before_launching_launch"
+    "patch_missing_before_launching_launch",
+    "settings_controller_support_title",
+    "settings_controller_support_description"
   ],
 
   "pl": [
@@ -312,7 +333,9 @@
     "hidden_button_hidden_tooltip",
     "patch_missing_before_launching_title",
     "patch_missing_before_launching_description",
-    "patch_missing_before_launching_install"
+    "patch_missing_before_launching_install",
+    "settings_controller_support_title",
+    "settings_controller_support_description"
   ],
 
   "pt": [
@@ -554,7 +577,9 @@
     "patch_missing_before_launching_title",
     "patch_missing_before_launching_description",
     "patch_missing_before_launching_install",
-    "patch_missing_before_launching_launch"
+    "patch_missing_before_launching_launch",
+    "settings_controller_support_title",
+    "settings_controller_support_description"
   ],
 
   "pt_BR": [
@@ -771,6 +796,28 @@
     "patch_missing_before_launching_title",
     "patch_missing_before_launching_description",
     "patch_missing_before_launching_install",
-    "patch_missing_before_launching_launch"
+    "patch_missing_before_launching_launch",
+    "settings_controller_support_title",
+    "settings_controller_support_description"
+  ],
+
+  "ru": [
+    "settings_controller_support_title",
+    "settings_controller_support_description"
+  ],
+
+  "ta": [
+    "settings_controller_support_title",
+    "settings_controller_support_description"
+  ],
+
+  "tr": [
+    "settings_controller_support_title",
+    "settings_controller_support_description"
+  ],
+
+  "uk": [
+    "settings_controller_support_title",
+    "settings_controller_support_description"
   ]
 }

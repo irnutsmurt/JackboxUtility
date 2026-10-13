@@ -1554,6 +1554,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Launch Game'**
   String get patch_missing_before_launching_launch;
+
+  /// No description provided for @settings_controller_support_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Controller Support'**
+  String get settings_controller_support_title;
+
+  /// No description provided for @settings_controller_support_description.
+  ///
+  /// In en, this message translates to:
+  /// **'Navigate the app with an Xbox controller: A to select, B to go back, LB and RB to switch games.'**
+  String get settings_controller_support_description;
 }
 
 class _AppLocalizationsDelegate

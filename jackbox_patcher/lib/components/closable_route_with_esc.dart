@@ -2,6 +2,7 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:jackbox_patcher/model/misc/audio/SFXEnum.dart';
 import 'package:jackbox_patcher/services/audio/sfx_service.dart';
+import 'package:jackbox_patcher/services/gamepad/gamepad_intents.dart';
 import 'package:jackbox_patcher/services/video/video_service.dart';
 
 import 'mouse_back_button_recognizer.dart';
@@ -99,6 +100,8 @@ class _ClosableRouteWithEscState extends State<ClosableRouteWithEsc> {
     return Actions(
       actions: {
         DismissIntent: CallbackAction<DismissIntent>(onInvoke: (intent) => _handleDismiss(context)),
+        PreviousItemIntent: CallbackAction<PreviousItemIntent>(onInvoke: (intent) => widget.leftEvent?.call()),
+        NextItemIntent: CallbackAction<NextItemIntent>(onInvoke: (intent) => widget.rightEvent?.call()),
       },
       child: _buildFocusScope(context),
     );
