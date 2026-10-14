@@ -1,8 +1,9 @@
 /// State of one controller at a given time.
 ///
-/// [buttons] is a combination of [GamepadButtons] and the sticks go from -32768
-/// to 32767 (up and right are positive).
-typedef GamepadSnapshot = ({int buttons, int leftX, int leftY, int rightY});
+/// [buttons] is a combination of [GamepadButtons], the sticks go from -32768
+/// to 32767 (up and right are positive) and [trigger] is the most pressed
+/// trigger, from 0 to 255.
+typedef GamepadSnapshot = ({int buttons, int leftX, int leftY, int rightY, int trigger});
 
 /// Bits of the buttons of a [GamepadSnapshot].
 ///
@@ -17,10 +18,11 @@ class GamepadButtons {
   static const int rightShoulder = 0x0200;
   static const int a = 0x1000;
   static const int b = 0x2000;
+  static const int x = 0x4000;
 }
 
 /// Navigation commands sent by a controller
-enum GamepadCommand { UP, DOWN, LEFT, RIGHT, ACTIVATE, BACK, PREVIOUS, NEXT, SCROLL_UP, SCROLL_DOWN }
+enum GamepadCommand { UP, DOWN, LEFT, RIGHT, ACTIVATE, BACK, QUICK_LAUNCH, PREVIOUS, NEXT, SCROLL_UP, SCROLL_DOWN }
 
 /// Turns controller states into navigation commands.
 ///
@@ -32,13 +34,18 @@ class GamepadMapper {
   static const int stickPressThreshold = 16384;
   static const int stickReleaseThreshold = 9830;
 
-  static const Duration directionRepeatDelay = Duration(milliseconds: 400);
-  static const Duration directionRepeatInterval = Duration(milliseconds: 110);
+  static const Duration directionRepeatDelay = Duration(milliseconds: 300);
+  static const Duration directionRepeatInterval = Duration(milliseconds: 90);
   static const Duration scrollRepeatInterval = Duration(milliseconds: 80);
+
+  /// While a trigger is pressed more than half way, the right stick scrolls faster
+  static const int triggerPressThreshold = 128;
+  static const Duration fastScrollRepeatInterval = Duration(milliseconds: 40);
 
   static const Map<int, GamepadCommand> _buttonCommands = {
     GamepadButtons.a: GamepadCommand.ACTIVATE,
     GamepadButtons.b: GamepadCommand.BACK,
+    GamepadButtons.x: GamepadCommand.QUICK_LAUNCH,
     GamepadButtons.leftShoulder: GamepadCommand.PREVIOUS,
     GamepadButtons.rightShoulder: GamepadCommand.NEXT,
   };
@@ -81,10 +88,12 @@ class GamepadMapper {
 
     // Every controller can be used at the same time
     int buttons = 0;
+    bool fastScroll = false;
     GamepadSnapshot leftStick = pads.first;
     GamepadSnapshot rightStick = pads.first;
     for (GamepadSnapshot pad in pads) {
       buttons |= pad.buttons;
+      fastScroll = fastScroll || pad.trigger > triggerPressThreshold;
       if (_leftStickAmount(pad) > _leftStickAmount(leftStick)) {
         leftStick = pad;
       }
@@ -131,16 +140,17 @@ class GamepadMapper {
     }
     _directionFromStick = directionFromStick;
 
+    Duration scrollInterval = fastScroll ? fastScrollRepeatInterval : scrollRepeatInterval;
     if (scroll != _heldScroll) {
       _heldScroll = scroll;
       _scrollBlocked = false;
       if (scroll != null) {
         commands.add(scroll);
-        _nextScrollRepeat = now + scrollRepeatInterval;
+        _nextScrollRepeat = now + scrollInterval;
       }
     } else if (scroll != null && !_scrollBlocked && now >= _nextScrollRepeat) {
       commands.add(scroll);
-      _nextScrollRepeat = now + scrollRepeatInterval;
+      _nextScrollRepeat = now + scrollInterval;
     }
 
     return commands;

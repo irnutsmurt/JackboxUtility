@@ -7,7 +7,8 @@ import '../../services/audio/sfx_service.dart';
 
 class EnumFilterPaneItem extends PaneItemHeader {
   EnumFilterPaneItem(
-      {required this.icon,
+      {super.key,
+      required this.icon,
       required this.name,
       required this.onChanged,
       required this.onActivationChanged,
@@ -68,6 +69,16 @@ class _EnumFilterPaneItemTitleState extends State<EnumFilterPaneItemTitle> {
     currentValue = widget.defaultValue;
     activated = widget.activated;
     super.initState();
+  }
+
+  @override
+  void didUpdateWidget(covariant EnumFilterPaneItemTitle oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // The title is kept when the page is rebuilt (the page gives the filter
+    // item a GlobalKey), so it follows the filter, e.g. when all the filters
+    // are cleared
+    activated = widget.activated;
+    currentValue = widget.defaultValue;
   }
 
   @override

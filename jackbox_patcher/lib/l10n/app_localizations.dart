@@ -1564,7 +1564,7 @@ abstract class AppLocalizations {
   /// No description provided for @settings_controller_support_description.
   ///
   /// In en, this message translates to:
-  /// **'Navigate the app with an Xbox controller: A to select, B to go back, LB and RB to switch games.'**
+  /// **'Navigate the app with an Xbox controller: A to select, B to go back, X to launch the selected game, LB and RB to switch games, right stick to scroll (hold a trigger to scroll faster).'**
   String get settings_controller_support_description;
 }
 

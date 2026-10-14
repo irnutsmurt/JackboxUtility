@@ -11,3 +11,9 @@ class PreviousItemIntent extends Intent {
 class NextItemIntent extends Intent {
   const NextItemIntent();
 }
+
+/// Launch the focused game without opening its page, like its small play
+/// button. Sent by the X button of a controller.
+class QuickLaunchIntent extends Intent {
+  const QuickLaunchIntent();
+}

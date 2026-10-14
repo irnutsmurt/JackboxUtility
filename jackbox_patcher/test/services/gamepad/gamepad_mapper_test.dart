@@ -1,11 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jackbox_patcher/services/gamepad/gamepad_mapper.dart';
 
-GamepadSnapshot pad({int buttons = 0, int leftX = 0, int leftY = 0, int rightY = 0}) {
-  return (buttons: buttons, leftX: leftX, leftY: leftY, rightY: rightY);
+GamepadSnapshot pad({int buttons = 0, int leftX = 0, int leftY = 0, int rightY = 0, int trigger = 0}) {
+  return (buttons: buttons, leftX: leftX, leftY: leftY, rightY: rightY, trigger: trigger);
 }
 
 Duration ms(int milliseconds) => Duration(milliseconds: milliseconds);
+
+const Duration repeatDelay = GamepadMapper.directionRepeatDelay;
+const Duration repeatInterval = GamepadMapper.directionRepeatInterval;
 
 void main() {
   late GamepadMapper mapper;
@@ -23,8 +26,9 @@ void main() {
       expect(mapper.update([pad(buttons: GamepadButtons.a)], ms(1032)), [GamepadCommand.ACTIVATE]);
     });
 
-    test('B, LB and RB are mapped', () {
+    test('B, X, LB and RB are mapped', () {
       expect(mapper.update([pad(buttons: GamepadButtons.b)], ms(0)), [GamepadCommand.BACK]);
+      expect(mapper.update([pad(buttons: GamepadButtons.x)], ms(8)), [GamepadCommand.QUICK_LAUNCH]);
       expect(
           mapper.update([pad(buttons: GamepadButtons.leftShoulder | GamepadButtons.rightShoulder)], ms(16)),
           [GamepadCommand.PREVIOUS, GamepadCommand.NEXT]);
@@ -32,13 +36,14 @@ void main() {
   });
 
   group('Directions', () {
-    test('a held D-pad direction repeats after 400 ms, then every 110 ms', () {
+    test('a held D-pad direction repeats after a delay, then at a faster interval', () {
+      Duration secondRepeat = repeatDelay + repeatInterval;
       expect(mapper.update([pad(buttons: GamepadButtons.dpadDown)], ms(0)), [GamepadCommand.DOWN]);
-      expect(mapper.update([pad(buttons: GamepadButtons.dpadDown)], ms(399)), isEmpty);
-      expect(mapper.update([pad(buttons: GamepadButtons.dpadDown)], ms(400)), [GamepadCommand.DOWN]);
-      expect(mapper.update([pad(buttons: GamepadButtons.dpadDown)], ms(509)), isEmpty);
-      expect(mapper.update([pad(buttons: GamepadButtons.dpadDown)], ms(510)), [GamepadCommand.DOWN]);
-      expect(mapper.update([pad()], ms(600)), isEmpty);
+      expect(mapper.update([pad(buttons: GamepadButtons.dpadDown)], repeatDelay - ms(1)), isEmpty);
+      expect(mapper.update([pad(buttons: GamepadButtons.dpadDown)], repeatDelay), [GamepadCommand.DOWN]);
+      expect(mapper.update([pad(buttons: GamepadButtons.dpadDown)], secondRepeat - ms(1)), isEmpty);
+      expect(mapper.update([pad(buttons: GamepadButtons.dpadDown)], secondRepeat), [GamepadCommand.DOWN]);
+      expect(mapper.update([pad()], secondRepeat + ms(16)), isEmpty);
     });
 
     test('the left stick needs 50% to press and goes under 30% to release', () {
@@ -56,7 +61,7 @@ void main() {
     test('a diagonal stick keeps its first direction', () {
       expect(mapper.update([pad(leftX: 20000, leftY: 19000)], ms(0)), [GamepadCommand.RIGHT]);
       expect(mapper.update([pad(leftX: 19000, leftY: 20000)], ms(16)), isEmpty);
-      expect(mapper.update([pad(leftX: 19000, leftY: 20000)], ms(400)), [GamepadCommand.RIGHT]);
+      expect(mapper.update([pad(leftX: 19000, leftY: 20000)], repeatDelay), [GamepadCommand.RIGHT]);
     });
 
     test('the D-pad wins over the stick', () {
@@ -67,7 +72,7 @@ void main() {
       expect(mapper.update([pad(buttons: GamepadButtons.dpadRight)], ms(0)), [GamepadCommand.RIGHT]);
       expect(mapper.update([pad(buttons: GamepadButtons.dpadRight | GamepadButtons.dpadDown)], ms(16)), isEmpty);
       expect(mapper.update([pad(buttons: GamepadButtons.dpadRight)], ms(32)), isEmpty);
-      expect(mapper.update([pad(buttons: GamepadButtons.dpadRight)], ms(400)), [GamepadCommand.RIGHT]);
+      expect(mapper.update([pad(buttons: GamepadButtons.dpadRight)], repeatDelay), [GamepadCommand.RIGHT]);
     });
 
     test('the stick doesn\'t keep a direction started with the D-pad', () {
@@ -83,6 +88,16 @@ void main() {
       expect(mapper.update([pad(rightY: -20000)], ms(79)), isEmpty);
       expect(mapper.update([pad(rightY: -20000)], ms(80)), [GamepadCommand.SCROLL_DOWN]);
       expect(mapper.update([pad(rightY: 20000)], ms(96)), [GamepadCommand.SCROLL_UP]);
+    });
+
+    test('scrolls faster while a trigger is pressed', () {
+      expect(mapper.update([pad(rightY: -20000, trigger: 255)], ms(0)), [GamepadCommand.SCROLL_DOWN]);
+      expect(mapper.update([pad(rightY: -20000, trigger: 255)], ms(39)), isEmpty);
+      expect(mapper.update([pad(rightY: -20000, trigger: 255)], ms(40)), [GamepadCommand.SCROLL_DOWN]);
+      // A trigger pressed less than half way doesn't count
+      expect(mapper.update([pad(rightY: -20000, trigger: 100)], ms(80)), [GamepadCommand.SCROLL_DOWN]);
+      expect(mapper.update([pad(rightY: -20000, trigger: 100)], ms(120)), isEmpty);
+      expect(mapper.update([pad(rightY: -20000, trigger: 100)], ms(160)), [GamepadCommand.SCROLL_DOWN]);
     });
 
     test('keeps scrolling until the stick goes under 30%', () {

@@ -13,5 +13,6 @@ void main() {
     expect(XINPUT_GAMEPAD_RIGHT_SHOULDER, GamepadButtons.rightShoulder);
     expect(XINPUT_GAMEPAD_A, GamepadButtons.a);
     expect(XINPUT_GAMEPAD_B, GamepadButtons.b);
+    expect(XINPUT_GAMEPAD_X, GamepadButtons.x);
   });
 }

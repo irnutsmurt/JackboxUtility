@@ -30,13 +30,13 @@ class GamepadService {
   /// controller is connected
   static const Duration resumeInputDelay = Duration(milliseconds: 250);
 
-  /// A is ignored for this time after a page or a dialog is opened, so a double
-  /// press doesn't also press a button of the new page
+  /// A and X are ignored for this time after a page or a dialog is opened, so a
+  /// double press doesn't also press a button of the new page
   static const Duration routeChangeActivateDelay = Duration(milliseconds: 200);
 
-  /// A is ignored during a game launch, so it isn't launched twice. The lock ends
-  /// when the app loses the focus, a few seconds after the launch is done, or at
-  /// most after [launchMaxActivateDelay].
+  /// A and X are ignored during a game launch, so it isn't launched twice. The
+  /// lock ends when the app loses the focus, a few seconds after the launch is
+  /// done, or at most after [launchMaxActivateDelay].
   static const Duration launchSettledActivateDelay = Duration(seconds: 8);
   static const Duration launchMaxActivateDelay = Duration(seconds: 60);
 
@@ -110,7 +110,7 @@ class GamepadService {
     }
   }
 
-  /// Called when a game or a pack launch failed, nothing will be launched so A can be used again right away
+  /// Called when a game or a pack launch failed, nothing will be launched so A and X can be used again right away
   void onLaunchFailed() {
     _launchLockedUntil = null;
   }
@@ -174,6 +174,13 @@ class GamepadService {
       routeObserver.focusCurrentRoute();
       return;
     }
+    if (!routeObserver.isInCurrentRoute(focusedNode)) {
+      // The focused widget is hidden behind the page or dialog in front (e.g. it was autofocused after a page was
+      // opened on top of it), it must never be moved or pressed: the page in front gets the focus back instead
+      JULogger().d("[GAMEPAD] The focus was behind the page in front, giving it back");
+      routeObserver.focusCurrentRoute();
+      return;
+    }
 
     switch (command) {
       case GamepadCommand.UP:
@@ -189,7 +196,7 @@ class GamepadService {
         _moveFocus(focusedContext, TraversalDirection.right);
         break;
       case GamepadCommand.ACTIVATE:
-        if (now < _ignoreActivateUntil || (_launchLockedUntil != null && now < _launchLockedUntil!)) {
+        if (_isActivateIgnored(now)) {
           return;
         }
         if (focusedNode is FocusScopeNode) {
@@ -198,6 +205,12 @@ class GamepadService {
         } else {
           Actions.maybeInvoke(focusedContext, const ActivateIntent());
         }
+        break;
+      case GamepadCommand.QUICK_LAUNCH:
+        if (_isActivateIgnored(now)) {
+          return;
+        }
+        Actions.maybeInvoke(focusedContext, const QuickLaunchIntent());
         break;
       case GamepadCommand.BACK:
         Actions.maybeInvoke(focusedContext, const DismissIntent());
@@ -215,6 +228,11 @@ class GamepadService {
         _scroll(focusedNode, focusedContext, AxisDirection.down);
         break;
     }
+  }
+
+  /// Whether A and X are ignored for now (just after a page was opened, or while launching a game)
+  bool _isActivateIgnored(Duration now) {
+    return now < _ignoreActivateUntil || (_launchLockedUntil != null && now < _launchLockedUntil!);
   }
 
   void _moveFocus(BuildContext focusedContext, TraversalDirection direction) {
@@ -278,9 +296,20 @@ class GamepadRouteObserver extends NavigatorObserver {
 
   /// Give the focus to the page or dialog in front
   void focusCurrentRoute() {
+    _currentRouteScope()?.requestFocus();
+  }
+
+  /// Whether [node] is in the page or dialog in front. Also true when it can't be known yet (the page isn't built).
+  bool isInCurrentRoute(FocusNode node) {
+    FocusScopeNode? scope = _currentRouteScope();
+    return scope == null || node == scope || node.ancestors.contains(scope);
+  }
+
+  FocusScopeNode? _currentRouteScope() {
     Route<dynamic>? route = _currentRoute;
     if (route is ModalRoute && route.subtreeContext != null) {
-      FocusScope.of(route.subtreeContext!, createDependency: false).requestFocus();
+      return FocusScope.of(route.subtreeContext!, createDependency: false);
     }
+    return null;
   }
 }

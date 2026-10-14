@@ -592,20 +592,23 @@ class _GameInfoWidgetState extends State<GameInfoWidget> implements EventObserve
       bool Function(UserJackboxPack, UserJackboxGame)? filter,
       UserJackboxPack? linkedPack,
       String? description}) {
-    return GestureDetector(
-        onTap: () {
-          if (isLink) {
-            viewModel.handleOpenTag(context, icon, text,
-                isLink: isLink, filter: filter, linkedPack: linkedPack, description: description);
-          }
+    Widget tag = Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+        child: Row(children: [
+          Icon(icon),
+          const SizedBox(width: 10),
+          Expanded(child: Text(text, style: isLink ? const TextStyle(decoration: TextDecoration.underline) : null))
+        ]));
+    if (!isLink) {
+      return tag;
+    }
+    // Can also be opened with the keyboard or a controller
+    return FocusableTap(
+        onPressed: () {
+          viewModel.handleOpenTag(context, icon, text,
+              isLink: isLink, filter: filter, linkedPack: linkedPack, description: description);
         },
-        child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-            child: Row(children: [
-              Icon(icon),
-              const SizedBox(width: 10),
-              Expanded(child: Text(text, style: isLink ? const TextStyle(decoration: TextDecoration.underline) : null))
-            ])));
+        child: tag);
   }
 
   Widget _buildGameFixAvailable(UserJackboxPackPatch fix) {

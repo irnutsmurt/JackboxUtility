@@ -7,6 +7,7 @@ import 'package:jackbox_patcher/pages/settings/server_info.dart';
 import 'package:jackbox_patcher/services/discord/discord_service.dart';
 
 import '../../components/closable_route_with_esc.dart';
+import '../../components/pane_item_focus_nodes.dart';
 import '../../services/translations/translations_helper.dart';
 
 class ParametersRoute extends StatefulWidget {
@@ -32,10 +33,18 @@ class ParametersMenuWidget extends StatefulWidget {
 
 class _ParametersMenuWidgetState extends State<ParametersMenuWidget> {
   int _selectedView = 0;
+  final PaneItemFocusNodes _paneFocusNodes = PaneItemFocusNodes();
+
   @override
   void initState() {
     DiscordService().launchSettingsPresence();
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _paneFocusNodes.dispose();
+    super.dispose();
   }
 
   @override
@@ -74,16 +83,19 @@ class _ParametersMenuWidgetState extends State<ParametersMenuWidget> {
           selected: _selectedView,
           items: [
             PaneItem(
+              focusNode: _paneFocusNodes.get("owned_packs"),
               icon: const Icon(FluentIcons.package),
               title: Text(TranslationsHelper().appLocalizations!.owned_packs),
               body: const ParametersWidget(),
             ),
             PaneItem(
+                focusNode: _paneFocusNodes.get("server_information"),
                 icon: const Icon(FluentIcons.server),
                 title: Text(
                     TranslationsHelper().appLocalizations!.server_information),
                 body: ServerInfoWidget()),
             PaneItem(
+              focusNode: _paneFocusNodes.get("app_behavior"),
               icon: const Icon(FontAwesomeIcons.play),
               title: Text(TranslationsHelper().appLocalizations!.app_behavior),
               body: AppBehaviorSettings(),
@@ -91,6 +103,7 @@ class _ParametersMenuWidgetState extends State<ParametersMenuWidget> {
           ],
           footerItems: [
             PaneItem(
+              focusNode: _paneFocusNodes.get("app_information"),
               icon: const Icon(FluentIcons.info),
               title:
                   Text(TranslationsHelper().appLocalizations!.app_information),

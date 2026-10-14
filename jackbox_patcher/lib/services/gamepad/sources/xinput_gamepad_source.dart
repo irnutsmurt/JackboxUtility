@@ -1,4 +1,5 @@
 import 'dart:ffi';
+import 'dart:math' show max;
 
 import 'package:ffi/ffi.dart';
 import 'package:jackbox_patcher/services/gamepad/gamepad_mapper.dart';
@@ -37,7 +38,8 @@ class XInputGamepadSource implements AbstractGamepadSource {
           buttons: gamepad.wButtons,
           leftX: gamepad.sThumbLX,
           leftY: gamepad.sThumbLY,
-          rightY: gamepad.sThumbRY
+          rightY: gamepad.sThumbRY,
+          trigger: max(gamepad.bLeftTrigger, gamepad.bRightTrigger)
         ));
       }
     }

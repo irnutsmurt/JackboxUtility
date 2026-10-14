@@ -867,5 +867,5 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settings_controller_support_description =>
-      'Navigate the app with an Xbox controller: A to select, B to go back, LB and RB to switch games.';
+      'Navigate the app with an Xbox controller: A to select, B to go back, X to launch the selected game, LB and RB to switch games, right stick to scroll (hold a trigger to scroll faster).';
 }

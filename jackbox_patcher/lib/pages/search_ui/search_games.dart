@@ -7,6 +7,7 @@ import 'package:jackbox_patcher/model/user_model/user_jackbox_game.dart';
 import 'package:jackbox_patcher/model/user_model/user_jackbox_pack.dart';
 import 'package:jackbox_patcher/services/api_utility/api_service.dart';
 import 'package:jackbox_patcher/services/audio/sfx_service.dart';
+import 'package:jackbox_patcher/services/gamepad/gamepad_intents.dart';
 import 'package:jackbox_patcher/services/gamepad/gamepad_service.dart';
 import 'package:jackbox_patcher/services/user/user_data.dart';
 
@@ -15,6 +16,7 @@ import '../../components/focusable_tap.dart';
 import '../../components/stars_rate.dart';
 import '../../model/misc/audio/SFXEnum.dart';
 import '../../services/discord/discord_service.dart';
+import '../../services/error/error.dart';
 import '../../services/launcher/launcher.dart';
 import '../../services/translations/translations_helper.dart';
 
@@ -187,9 +189,9 @@ class _SearchGameWidgetState extends State<SearchGameWidget> {
                         Row(
                           children: [
                             MouseRegion(
-                                child: GestureDetector(
+                                child: FocusableTap(
                                     child: Icon(sortAscending ? FontAwesomeIcons.sortDown : FontAwesomeIcons.sortUp),
-                                    onTap: () {
+                                    onPressed: () {
                                       SFXService().playSFX(SFX.CLICK);
                                       key = UniqueKey();
                                       setState(() => sortAscending = !sortAscending);
@@ -487,6 +489,12 @@ class _SearchGameGameWidgetState extends State<SearchGameGameWidget> {
         child: FocusableTap(
             autofocus: widget.autofocus,
             onPressed: _openGame,
+            // No glow: it would tint the whole banner in blue, and the game info already shows that it's focused
+            focusStyle: const FocusThemeData(glowFactor: 0.0),
+            // X on a controller launches the focused game without opening its page, like its small play button
+            customActions: widget.pack.owned
+                ? {QuickLaunchIntent: CallbackAction<QuickLaunchIntent>(onInvoke: (intent) => _launchGame())}
+                : null,
             // Show the game info when it's focused with the keyboard or a controller, like on mouse hover
             onFocusChange: (bool value) => setState(() {
                   isFirstTime = false;
@@ -600,16 +608,20 @@ class _SearchGameGameWidgetState extends State<SearchGameGameWidget> {
                                               child: Padding(
                                                   padding: EdgeInsets.only(right: 8),
                                                   child: Button(
-                                                    // Only for the mouse, the keyboard and the controller open the
-                                                    // game page so the patch check isn't skipped
+                                                    // Only for the mouse, X does the same with a controller
                                                     focusable: false,
                                                     style: ButtonStyle(
                                                       backgroundColor: ButtonState.all<Color>(Colors.green),
                                                     ),
-                                                    child: Icon(FontAwesomeIcons.play),
-                                                    onPressed: () {
-                                                      Launcher.launchGame(widget.pack, widget.game);
-                                                    },
+                                                    // Shows the controller button launching the focused game
+                                                    child: ValueListenableBuilder<bool>(
+                                                        valueListenable: GamepadService().padConnected,
+                                                        builder: (context, padConnected, _) {
+                                                          return Icon(padConnected && focused
+                                                              ? FontAwesomeIcons.x
+                                                              : FontAwesomeIcons.play);
+                                                        }),
+                                                    onPressed: _launchGame,
                                                   ))),
                                       ],
                                     )
@@ -619,6 +631,16 @@ class _SearchGameGameWidgetState extends State<SearchGameGameWidget> {
                         );
                   })),
         )));
+  }
+
+  /// Launch the game without opening its page, so its patches aren't checked (small play button, or X on a
+  /// controller)
+  void _launchGame() {
+    Launcher.launchGame(widget.pack, widget.game).catchError((e) {
+      if (mounted) {
+        InfoBarService.showError(context, e.toString());
+      }
+    });
   }
 
   Future<void> _openGame() async {
