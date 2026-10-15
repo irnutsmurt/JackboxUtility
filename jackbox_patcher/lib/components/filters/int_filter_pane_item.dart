@@ -5,6 +5,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../model/misc/audio/SFXEnum.dart';
 import '../../services/audio/sfx_service.dart';
 import '../focusable_tap.dart';
+import '../row_focus_node.dart';
 
 class IntFilterPaneItem extends PaneItemHeader {
   IntFilterPaneItem(
@@ -73,12 +74,27 @@ class _IntFilterPaneItemTitleState extends State<IntFilterPaneItemTitle> {
   bool isChecked = false;
   bool activated = false;
   late int currentValue;
+  final RowFocusNode _checkboxFocusNode = RowFocusNode(debugLabel: "Filter checkbox");
+  final RowFocusNode _minusFocusNode = RowFocusNode(debugLabel: "Filter minus");
+  final RowFocusNode _plusFocusNode = RowFocusNode(debugLabel: "Filter plus");
 
   @override
   void initState() {
     currentValue = widget.defaultValue;
     activated = widget.activated;
+    _checkboxFocusNode.right = _minusFocusNode;
+    _minusFocusNode.left = _checkboxFocusNode;
+    _minusFocusNode.right = _plusFocusNode;
+    _plusFocusNode.left = _minusFocusNode;
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _checkboxFocusNode.dispose();
+    _minusFocusNode.dispose();
+    _plusFocusNode.dispose();
+    super.dispose();
   }
 
   @override
@@ -101,6 +117,7 @@ class _IntFilterPaneItemTitleState extends State<IntFilterPaneItemTitle> {
             SFXService().playSFX(SFX.HOVER_OVER_STAR_OR_FILTER);
           },
           child: Checkbox(
+              focusNode: _checkboxFocusNode,
               checked: activated,
               onChanged: (value) {
                 widget.onActivationChanged(value!);
@@ -122,6 +139,7 @@ class _IntFilterPaneItemTitleState extends State<IntFilterPaneItemTitle> {
         // Can be selected with the keyboard or a controller once the filter is
         // activated, like the combo box of the other filters
         FocusableTap(
+            focusNode: _minusFocusNode,
             onPressed: activated
                 ? () {
                     if (currentValue - widget.step >= widget.min) {
@@ -146,6 +164,7 @@ class _IntFilterPaneItemTitleState extends State<IntFilterPaneItemTitle> {
                 style: TextStyle(color: activated ? null : Colors.grey))),
         SizedBox(width: 8),
         FocusableTap(
+            focusNode: _plusFocusNode,
             onPressed: activated
                 ? () {
                     if (currentValue + widget.step <= widget.max) {

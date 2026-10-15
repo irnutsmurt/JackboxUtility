@@ -27,7 +27,9 @@ enum GamepadCommand { UP, DOWN, LEFT, RIGHT, ACTIVATE, BACK, QUICK_LAUNCH, PREVI
 /// Turns controller states into navigation commands.
 ///
 /// Buttons fire once per press. Directions (D-pad or left stick) and scrolling
-/// (right stick) fire when pressed, then repeat while they are held.
+/// (right stick) fire when pressed, then repeat while they are held. While a
+/// trigger is held, directions repeat faster and the scroll goes further (see
+/// [fastScroll]).
 class GamepadMapper {
   /// A stick counts as pressed above 50% and as released under 30%, so it
   /// doesn't flicker around a single threshold
@@ -38,9 +40,11 @@ class GamepadMapper {
   static const Duration directionRepeatInterval = Duration(milliseconds: 90);
   static const Duration scrollRepeatInterval = Duration(milliseconds: 80);
 
-  /// While a trigger is pressed more than half way, the right stick scrolls faster
+  /// While a trigger is pressed more than half way, the left stick and the D-pad move about 3 times faster, and
+  /// the right stick scrolls faster (see [fastScroll])
   static const int triggerPressThreshold = 128;
-  static const Duration fastScrollRepeatInterval = Duration(milliseconds: 40);
+  static const Duration fastDirectionRepeatDelay = Duration(milliseconds: 150);
+  static const Duration fastDirectionRepeatInterval = Duration(milliseconds: 30);
 
   static const Map<int, GamepadCommand> _buttonCommands = {
     GamepadButtons.a: GamepadCommand.ACTIVATE,
@@ -70,8 +74,15 @@ class GamepadMapper {
   GamepadCommand? _heldScroll;
   bool _scrollBlocked = false;
   Duration _nextScrollRepeat = Duration.zero;
+  bool _fastScroll = false;
 
   bool _rebasePending = false;
+
+  /// Whether the scroll commands should scroll further than usual (a trigger is pressed).
+  ///
+  /// They keep the same pace: sending them more often would restart the scroll
+  /// animation before it gets going, so the page would scroll slower.
+  bool get fastScroll => _fastScroll;
 
   /// Inputs held during the next [update] will only count once released and
   /// pressed again (e.g. the button used to quit a game).
@@ -88,12 +99,12 @@ class GamepadMapper {
 
     // Every controller can be used at the same time
     int buttons = 0;
-    bool fastScroll = false;
+    bool triggerPressed = false;
     GamepadSnapshot leftStick = pads.first;
     GamepadSnapshot rightStick = pads.first;
     for (GamepadSnapshot pad in pads) {
       buttons |= pad.buttons;
-      fastScroll = fastScroll || pad.trigger > triggerPressThreshold;
+      triggerPressed = triggerPressed || pad.trigger > triggerPressThreshold;
       if (_leftStickAmount(pad) > _leftStickAmount(leftStick)) {
         leftStick = pad;
       }
@@ -105,6 +116,7 @@ class GamepadMapper {
     GamepadCommand? direction = _readDirection(buttons, leftStick.leftX, leftStick.leftY);
     bool directionFromStick = direction != null && (buttons & _dpadButtons) == 0;
     GamepadCommand? scroll = _readScroll(rightStick.rightY);
+    _fastScroll = triggerPressed;
 
     if (_rebasePending) {
       _rebasePending = false;
@@ -132,25 +144,24 @@ class GamepadMapper {
       _directionBlocked = false;
       if (direction != null) {
         commands.add(direction);
-        _nextDirectionRepeat = now + directionRepeatDelay;
+        _nextDirectionRepeat = now + (triggerPressed ? fastDirectionRepeatDelay : directionRepeatDelay);
       }
     } else if (direction != null && !_directionBlocked && now >= _nextDirectionRepeat) {
       commands.add(direction);
-      _nextDirectionRepeat = now + directionRepeatInterval;
+      _nextDirectionRepeat = now + (triggerPressed ? fastDirectionRepeatInterval : directionRepeatInterval);
     }
     _directionFromStick = directionFromStick;
 
-    Duration scrollInterval = fastScroll ? fastScrollRepeatInterval : scrollRepeatInterval;
     if (scroll != _heldScroll) {
       _heldScroll = scroll;
       _scrollBlocked = false;
       if (scroll != null) {
         commands.add(scroll);
-        _nextScrollRepeat = now + scrollInterval;
+        _nextScrollRepeat = now + scrollRepeatInterval;
       }
     } else if (scroll != null && !_scrollBlocked && now >= _nextScrollRepeat) {
       commands.add(scroll);
-      _nextScrollRepeat = now + scrollInterval;
+      _nextScrollRepeat = now + scrollRepeatInterval;
     }
 
     return commands;
@@ -164,6 +175,7 @@ class GamepadMapper {
     _directionBlocked = false;
     _heldScroll = null;
     _scrollBlocked = false;
+    _fastScroll = false;
   }
 
   int _leftStickAmount(GamepadSnapshot pad) {

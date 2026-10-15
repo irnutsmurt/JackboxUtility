@@ -6,6 +6,7 @@ import 'package:jackbox_patcher/services/discord/discord_service.dart';
 
 import '../../components/closable_route_with_esc.dart';
 import '../../components/pane_item_focus_nodes.dart';
+import '../../components/pane_page_traversal.dart';
 import '../../model/user_model/user_jackbox_pack.dart';
 import '../../services/api_utility/api_service.dart';
 import '../../services/translations/translations_helper.dart';
@@ -130,7 +131,8 @@ class _PatcherMenuWidgetState extends State<PatcherMenuWidget> {
         title: Text(TranslationsHelper().appLocalizations!.all_patches),
         // Not a ListView: it only builds the categories close to the screen, so the arrows or a controller couldn't
         // reach the install button of the next ones
-        body: SingleChildScrollView(
+        body: PanePageTraversal(
+            child: SingleChildScrollView(
             child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: List.generate(
@@ -138,7 +140,7 @@ class _PatcherMenuWidgetState extends State<PatcherMenuWidget> {
                     (i) => CategoryPackPatch(
                         category: APIService().cachedCategories[i],
                         showAllPacks: showAllPacks,
-                        changeMenuView: _changeMenuView))))));
+                        changeMenuView: _changeMenuView)))))));
     for (var userPack
         in showAllPacks ? UserData().packs : UserData().packs.where((element) => element.owned).toList()) {
       int countPatchs = 0;
@@ -162,7 +164,7 @@ class _PatcherMenuWidgetState extends State<PatcherMenuWidget> {
               memCacheWidth: 40,
             ),
             title: Text(userPack.pack.name),
-            body: PatcherPackWidget(userPack: userPack)));
+            body: PanePageTraversal(child: PatcherPackWidget(userPack: userPack))));
       }
     }
   }

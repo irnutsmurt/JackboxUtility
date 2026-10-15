@@ -107,6 +107,7 @@ flutter:
     - assets/lotties/
     - assets/logos/
     - assets/images/
+    - assets/images/controller/
     - assets/audios/sfx/default/
 
   # An image asset can refer to one or more resolution-specific "variants", see

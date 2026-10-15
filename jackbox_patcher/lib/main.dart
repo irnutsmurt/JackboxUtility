@@ -1,5 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:jackbox_patcher/app_configuration.dart';
+import 'package:jackbox_patcher/components/controller_hints.dart';
 import 'package:jackbox_patcher/l10n/app_localizations.dart';
 import 'package:jackbox_patcher/pages/main_container.dart';
 import 'package:jackbox_patcher/pages/settings/menu.dart';
@@ -52,7 +53,18 @@ class MyApp extends StatelessWidget {
         return ValueListenableBuilder<bool>(
             valueListenable: GamepadService().padConnected,
             builder: (context, padConnected, _) {
-              return FocusTheme(data: FocusThemeData(glowFactor: padConnected ? 2.0 : null), child: child!);
+              return FocusTheme(
+                  data: FocusThemeData(glowFactor: padConnected ? 2.0 : null),
+                  // The column is always there, so the pages aren't rebuilt when a controller is connected
+                  child: Column(children: [
+                    Expanded(child: child!),
+                    // What the controller buttons do, hidden while the keyboard or the mouse is used
+                    ValueListenableBuilder<bool>(
+                        valueListenable: GamepadService().controllerInUse,
+                        builder: (context, controllerInUse, _) {
+                          return controllerInUse ? const ControllerHints() : const SizedBox(height: 0);
+                        }),
+                  ]));
             });
       },
       themeMode: ThemeMode.dark,

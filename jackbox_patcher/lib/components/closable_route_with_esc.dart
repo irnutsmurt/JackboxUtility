@@ -49,7 +49,18 @@ class _ClosableRouteWithEscState extends State<ClosableRouteWithEsc> {
 
   /// Holding a key handled by this page must only do its action once, and not something else after (e.g. closing
   /// the pages below or moving the focus)
+  /// Up or down without modifiers (shift + up selects the text) while a text field is being edited
+  bool _isLeavingTextField(KeyEvent event) {
+    return (const SingleActivator(LogicalKeyboardKey.arrowUp).accepts(event, HardwareKeyboard.instance) ||
+            const SingleActivator(LogicalKeyboardKey.arrowDown).accepts(event, HardwareKeyboard.instance)) &&
+        _isEditingText();
+  }
+
   KeyEventResult _handleKeyRepeat(KeyRepeatEvent event) {
+    if (_isLeavingTextField(event)) {
+      // Nothing to go to in that direction, the cursor of the text field mustn't move either
+      return KeyEventResult.handled;
+    }
     if ((event.logicalKey == LogicalKeyboardKey.escape || event.logicalKey == LogicalKeyboardKey.backspace) &&
         widget.close &&
         !_isEditingText()) {
@@ -117,6 +128,12 @@ class _ClosableRouteWithEscState extends State<ClosableRouteWithEsc> {
         }
         if (event is! KeyDownEvent) {
           return KeyEventResult.ignored;
+        }
+        if (_isLeavingTextField(event)) {
+          // The text fields of the pages have a single line: up and down leave them, like with a controller
+          FocusManager.instance.primaryFocus?.focusInDirection(
+              event.logicalKey == LogicalKeyboardKey.arrowUp ? TraversalDirection.up : TraversalDirection.down);
+          return KeyEventResult.handled;
         }
         if (event.logicalKey == LogicalKeyboardKey.escape || event.logicalKey == LogicalKeyboardKey.backspace) {
           if (node == focusNode && widget.close && !_isEditingText() && _handleNavigateBack(context)) {

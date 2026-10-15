@@ -1564,8 +1564,44 @@ abstract class AppLocalizations {
   /// No description provided for @settings_controller_support_description.
   ///
   /// In en, this message translates to:
-  /// **'Navigate the app with an Xbox controller: A to select, B to go back, X to launch the selected game, LB and RB to switch games, right stick to scroll (hold a trigger to scroll faster).'**
+  /// **'Navigate the app with an Xbox controller: left stick or D-pad to move, A to select, B to go back, X to launch the selected game, LB and RB to switch games, right stick to scroll. Hold a trigger to move or scroll faster.'**
   String get settings_controller_support_description;
+
+  /// No description provided for @controller_hint_move.
+  ///
+  /// In en, this message translates to:
+  /// **'Move'**
+  String get controller_hint_move;
+
+  /// No description provided for @controller_hint_select.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get controller_hint_select;
+
+  /// No description provided for @controller_hint_back.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get controller_hint_back;
+
+  /// No description provided for @controller_hint_switch_game.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous / Next Game'**
+  String get controller_hint_switch_game;
+
+  /// No description provided for @controller_hint_scroll.
+  ///
+  /// In en, this message translates to:
+  /// **'Scroll'**
+  String get controller_hint_scroll;
+
+  /// No description provided for @controller_hint_faster.
+  ///
+  /// In en, this message translates to:
+  /// **'Move / Scroll Faster'**
+  String get controller_hint_faster;
 }
 
 class _AppLocalizationsDelegate

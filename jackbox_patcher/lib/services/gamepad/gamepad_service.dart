@@ -1,7 +1,11 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' show max;
 
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
 import 'package:jackbox_patcher/services/gamepad/gamepad_intents.dart';
 import 'package:jackbox_patcher/services/gamepad/gamepad_mapper.dart';
 import 'package:jackbox_patcher/services/gamepad/launcher_window.dart';
@@ -40,8 +44,32 @@ class GamepadService {
   static const Duration launchSettledActivateDelay = Duration(seconds: 8);
   static const Duration launchMaxActivateDelay = Duration(seconds: 60);
 
+  /// While a trigger is held, each step of the right stick scrolls this part of the visible page (about 10 times
+  /// faster than without a trigger in a maximized 1080p window), but at least [fastScrollMinStep] for the small
+  /// scrollables of the dialogs
+  static const double fastScrollPageFraction = 0.5;
+  static const double fastScrollMinStep = 150;
+
+  /// A fast scroll step lasts a bit longer than the time between two steps, so the next one takes over before it
+  /// ends and the page scrolls continuously while the stick is held
+  static const Duration fastScrollDuration = Duration(milliseconds: 100);
+
+  /// Usage page of the keyboard keys in [PhysicalKeyboardKey.usbHidUsage]
+  static const int keyboardUsagePage = 0x00070000;
+
+  static const List<GamepadCommand> _directionCommands = [
+    GamepadCommand.UP,
+    GamepadCommand.DOWN,
+    GamepadCommand.LEFT,
+    GamepadCommand.RIGHT
+  ];
+
   /// Whether at least one controller is connected
   final ValueNotifier<bool> padConnected = ValueNotifier(false);
+
+  /// Whether the controller is the input in use: one is connected and it was used after the keyboard and the
+  /// mouse. Its buttons are only shown then.
+  final ValueNotifier<bool> controllerInUse = ValueNotifier(false);
 
   /// Must be added to the app navigator observers
   final GamepadRouteObserver routeObserver = GamepadRouteObserver();
@@ -76,6 +104,8 @@ class GamepadService {
     _source = XInputGamepadSource();
     _launcherWindow = LauncherWindow();
     _wasForeground = false;
+    HardwareKeyboard.instance.addHandler(_onKeyEvent);
+    GestureBinding.instance.pointerRouter.addGlobalRoute(_onPointerEvent);
     _schedule(Duration.zero);
   }
 
@@ -91,7 +121,10 @@ class GamepadService {
     _source = null;
     _launcherWindow?.dispose();
     _launcherWindow = null;
+    HardwareKeyboard.instance.removeHandler(_onKeyEvent);
+    GestureBinding.instance.pointerRouter.removeGlobalRoute(_onPointerEvent);
     padConnected.value = false;
+    _setControllerInUse(false);
   }
 
   /// Called when a game or a pack starts launching
@@ -120,6 +153,45 @@ class GamepadService {
     _ignoreActivateUntil = _clock.elapsed + routeChangeActivateDelay;
   }
 
+  /// Whether [key] is a key of a keyboard, and not e.g. a controller button sent as a key
+  static bool isKeyboardKey(PhysicalKeyboardKey key) {
+    return (key.usbHidUsage & 0xFFFF0000) == keyboardUsagePage;
+  }
+
+  /// The keyboard was used, so the controller isn't the input in use anymore
+  bool _onKeyEvent(KeyEvent event) {
+    // The controller buttons can also come as keys (the VK_GAMEPAD_* keys of Windows), they don't count
+    if (event is KeyDownEvent && !event.synthesized && isKeyboardKey(event.physicalKey)) {
+      _setControllerInUse(false);
+    }
+    // The key still does what it does
+    return false;
+  }
+
+  /// The mouse or the touchpad was clicked or scrolled (or the screen touched), so the controller isn't the input in
+  /// use anymore. Moving the mouse doesn't count, it can be bumped while using the controller.
+  void _onPointerEvent(PointerEvent event) {
+    if (event is PointerDownEvent || event is PointerSignalEvent || event is PointerPanZoomStartEvent) {
+      _setControllerInUse(false);
+    }
+  }
+
+  /// [focusMoved] when the input that makes the controller the one in use moved the focus
+  void _setControllerInUse(bool inUse, {bool focusMoved = false}) {
+    if (inUse && focusMoved && !controllerInUse.value) {
+      // The focus was just scrolled into view, but the bar of the controller buttons takes room at the bottom of
+      // the page once it's built, so it's scrolled into view again then. Only after a move: otherwise the focused
+      // widget can be far from where the user scrolled with the mouse.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        BuildContext? focusedContext = FocusManager.instance.primaryFocus?.context;
+        if (focusedContext != null && focusedContext.mounted) {
+          Scrollable.ensureVisible(focusedContext, alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd);
+        }
+      });
+    }
+    controllerInUse.value = inUse;
+  }
+
   void _schedule(Duration delay) {
     _timer = Timer(delay, _tick);
   }
@@ -146,6 +218,10 @@ class GamepadService {
         _ignoreInputUntil = now + resumeInputDelay;
         _wasForeground = true;
       }
+      if (connected != padConnected.value) {
+        // A controller that was just connected is the one in use, until the keyboard or the mouse is used
+        _setControllerInUse(connected);
+      }
       padConnected.value = connected;
       commands = _mapper.update(pads, now);
       _schedule(connected ? activePollInterval : idlePollInterval);
@@ -158,6 +234,9 @@ class GamepadService {
 
     if (now < _ignoreInputUntil) {
       return;
+    }
+    if (commands.isNotEmpty) {
+      _setControllerInUse(true, focusMoved: commands.any(_directionCommands.contains));
     }
     // Errors from the widgets are left to the global error handlers, the next tick is already scheduled
     for (GamepadCommand command in commands) {
@@ -232,8 +311,11 @@ class GamepadService {
 
   /// Whether A and X are ignored for now (just after a page was opened, or while launching a game)
   bool _isActivateIgnored(Duration now) {
-    return now < _ignoreActivateUntil || (_launchLockedUntil != null && now < _launchLockedUntil!);
+    return now < _ignoreActivateUntil || isLaunchLocked;
   }
+
+  /// Whether a game is launching, so another launch is ignored (A and X, and Space on the keyboard)
+  bool get isLaunchLocked => _launchLockedUntil != null && _clock.elapsed < _launchLockedUntil!;
 
   void _moveFocus(BuildContext focusedContext, TraversalDirection direction) {
     // The pane and the page of a NavigationView don't use the same traversal policy, and each one remembers its
@@ -254,9 +336,42 @@ class GamepadService {
       // Only the page or the dialog itself is focused and its scrollable is below it, so nothing can be scrolled
       // yet: select its first control instead, like A does
       focusedNode.focusInDirection(TraversalDirection.down);
-    } else {
+    } else if (!_mapper.fastScroll || !_scrollFaster(focusedContext, direction)) {
       Actions.maybeInvoke(focusedContext, ScrollIntent(direction: direction));
     }
+  }
+
+  /// Scroll further than a ScrollIntent (which scrolls by a line), at the same pace. Returns false if nothing can be
+  /// scrolled vertically from the focused widget, so a ScrollIntent is used instead.
+  bool _scrollFaster(BuildContext focusedContext, AxisDirection direction) {
+    if (_verticalScrollPosition(focusedContext) == null) {
+      return false;
+    }
+    // Started on the next frame: started now, the scroll would only move from the frame after
+    SchedulerBinding.instance.scheduleFrameCallback((_) {
+      ScrollPosition? position = focusedContext.mounted ? _verticalScrollPosition(focusedContext) : null;
+      if (position == null) {
+        return;
+      }
+      double step = max(position.viewportDimension * fastScrollPageFraction, fastScrollMinStep);
+      double distance = direction == position.axisDirection ? step : -step;
+      position.moveTo(position.pixels + distance, duration: fastScrollDuration, curve: Curves.linear);
+    });
+    return true;
+  }
+
+  /// The vertical scrollable around the focused widget or, like for a ScrollIntent, the primary one of the page
+  /// or dialog (e.g. the content of a dialog while one of its buttons is focused)
+  ScrollPosition? _verticalScrollPosition(BuildContext focusedContext) {
+    ScrollableState? scrollable = Scrollable.maybeOf(focusedContext, axis: Axis.vertical);
+    if (scrollable != null) {
+      return scrollable.position;
+    }
+    ScrollController? controller = PrimaryScrollController.maybeOf(focusedContext);
+    if (controller == null || controller.positions.length != 1 || controller.position.axis != Axis.vertical) {
+      return null;
+    }
+    return controller.position;
   }
 }
 
@@ -264,6 +379,12 @@ class GamepadService {
 /// give it the focus back
 class GamepadRouteObserver extends NavigatorObserver {
   Route<dynamic>? _currentRoute;
+
+  /// Changes after each page or dialog change, once the new one is built
+  final ValueNotifier<int> routeChanges = ValueNotifier(0);
+
+  /// Name of the page in front (e.g. "/game"), null for a dialog
+  String? get currentRouteName => _currentRoute?.settings.name;
 
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
@@ -292,6 +413,8 @@ class GamepadRouteObserver extends NavigatorObserver {
   void _setCurrentRoute(Route<dynamic>? route) {
     _currentRoute = route;
     GamepadService().onRouteChanged();
+    // The navigator calls the observers while it's building, the listeners can only rebuild after
+    WidgetsBinding.instance.addPostFrameCallback((_) => routeChanges.value++);
   }
 
   /// Give the focus to the page or dialog in front

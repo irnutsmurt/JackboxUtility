@@ -598,6 +598,18 @@
   "@patch_missing_before_launching_launch": {},
   "settings_controller_support_title": "Controller Support",
   "@settings_controller_support_title": {},
-  "settings_controller_support_description": "Navigate the app with an Xbox controller: A to select, B to go back, X to launch the selected game, LB and RB to switch games, right stick to scroll (hold a trigger to scroll faster).",
-  "@settings_controller_support_description": {}
+  "settings_controller_support_description": "Navigate the app with an Xbox controller: left stick or D-pad to move, A to select, B to go back, X to launch the selected game, LB and RB to switch games, right stick to scroll. Hold a trigger to move or scroll faster.",
+  "@settings_controller_support_description": {},
+  "controller_hint_move": "Move",
+  "@controller_hint_move": {},
+  "controller_hint_select": "Select",
+  "@controller_hint_select": {},
+  "controller_hint_back": "Back",
+  "@controller_hint_back": {},
+  "controller_hint_switch_game": "Previous / Next Game",
+  "@controller_hint_switch_game": {},
+  "controller_hint_scroll": "Scroll",
+  "@controller_hint_scroll": {},
+  "controller_hint_faster": "Move / Scroll Faster",
+  "@controller_hint_faster": {}
 }

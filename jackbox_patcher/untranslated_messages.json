@@ -5,7 +5,13 @@
     "patch_missing_before_launching_install",
     "patch_missing_before_launching_launch",
     "settings_controller_support_title",
-    "settings_controller_support_description"
+    "settings_controller_support_description",
+    "controller_hint_move",
+    "controller_hint_select",
+    "controller_hint_back",
+    "controller_hint_switch_game",
+    "controller_hint_scroll",
+    "controller_hint_faster"
   ],
 
   "ca": [
@@ -14,22 +20,46 @@
     "patch_missing_before_launching_install",
     "patch_missing_before_launching_launch",
     "settings_controller_support_title",
-    "settings_controller_support_description"
+    "settings_controller_support_description",
+    "controller_hint_move",
+    "controller_hint_select",
+    "controller_hint_back",
+    "controller_hint_switch_game",
+    "controller_hint_scroll",
+    "controller_hint_faster"
   ],
 
   "de": [
     "settings_controller_support_title",
-    "settings_controller_support_description"
+    "settings_controller_support_description",
+    "controller_hint_move",
+    "controller_hint_select",
+    "controller_hint_back",
+    "controller_hint_switch_game",
+    "controller_hint_scroll",
+    "controller_hint_faster"
   ],
 
   "es": [
     "settings_controller_support_title",
-    "settings_controller_support_description"
+    "settings_controller_support_description",
+    "controller_hint_move",
+    "controller_hint_select",
+    "controller_hint_back",
+    "controller_hint_switch_game",
+    "controller_hint_scroll",
+    "controller_hint_faster"
   ],
 
   "fr": [
     "settings_controller_support_title",
-    "settings_controller_support_description"
+    "settings_controller_support_description",
+    "controller_hint_move",
+    "controller_hint_select",
+    "controller_hint_back",
+    "controller_hint_switch_game",
+    "controller_hint_scroll",
+    "controller_hint_faster"
   ],
 
   "nb": [
@@ -263,7 +293,13 @@
     "patch_missing_before_launching_install",
     "patch_missing_before_launching_launch",
     "settings_controller_support_title",
-    "settings_controller_support_description"
+    "settings_controller_support_description",
+    "controller_hint_move",
+    "controller_hint_select",
+    "controller_hint_back",
+    "controller_hint_switch_game",
+    "controller_hint_scroll",
+    "controller_hint_faster"
   ],
 
   "pl": [
@@ -335,7 +371,13 @@
     "patch_missing_before_launching_description",
     "patch_missing_before_launching_install",
     "settings_controller_support_title",
-    "settings_controller_support_description"
+    "settings_controller_support_description",
+    "controller_hint_move",
+    "controller_hint_select",
+    "controller_hint_back",
+    "controller_hint_switch_game",
+    "controller_hint_scroll",
+    "controller_hint_faster"
   ],
 
   "pt": [
@@ -579,7 +621,13 @@
     "patch_missing_before_launching_install",
     "patch_missing_before_launching_launch",
     "settings_controller_support_title",
-    "settings_controller_support_description"
+    "settings_controller_support_description",
+    "controller_hint_move",
+    "controller_hint_select",
+    "controller_hint_back",
+    "controller_hint_switch_game",
+    "controller_hint_scroll",
+    "controller_hint_faster"
   ],
 
   "pt_BR": [
@@ -798,26 +846,56 @@
     "patch_missing_before_launching_install",
     "patch_missing_before_launching_launch",
     "settings_controller_support_title",
-    "settings_controller_support_description"
+    "settings_controller_support_description",
+    "controller_hint_move",
+    "controller_hint_select",
+    "controller_hint_back",
+    "controller_hint_switch_game",
+    "controller_hint_scroll",
+    "controller_hint_faster"
   ],
 
   "ru": [
     "settings_controller_support_title",
-    "settings_controller_support_description"
+    "settings_controller_support_description",
+    "controller_hint_move",
+    "controller_hint_select",
+    "controller_hint_back",
+    "controller_hint_switch_game",
+    "controller_hint_scroll",
+    "controller_hint_faster"
   ],
 
   "ta": [
     "settings_controller_support_title",
-    "settings_controller_support_description"
+    "settings_controller_support_description",
+    "controller_hint_move",
+    "controller_hint_select",
+    "controller_hint_back",
+    "controller_hint_switch_game",
+    "controller_hint_scroll",
+    "controller_hint_faster"
   ],
 
   "tr": [
     "settings_controller_support_title",
-    "settings_controller_support_description"
+    "settings_controller_support_description",
+    "controller_hint_move",
+    "controller_hint_select",
+    "controller_hint_back",
+    "controller_hint_switch_game",
+    "controller_hint_scroll",
+    "controller_hint_faster"
   ],
 
   "uk": [
     "settings_controller_support_title",
-    "settings_controller_support_description"
+    "settings_controller_support_description",
+    "controller_hint_move",
+    "controller_hint_select",
+    "controller_hint_back",
+    "controller_hint_switch_game",
+    "controller_hint_scroll",
+    "controller_hint_faster"
   ]
 }

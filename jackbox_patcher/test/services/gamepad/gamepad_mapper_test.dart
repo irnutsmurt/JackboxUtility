@@ -46,6 +46,20 @@ void main() {
       expect(mapper.update([pad()], secondRepeat + ms(16)), isEmpty);
     });
 
+    test('a trigger makes a held direction repeat faster', () {
+      Duration fastDelay = GamepadMapper.fastDirectionRepeatDelay;
+      Duration fastInterval = GamepadMapper.fastDirectionRepeatInterval;
+      expect(mapper.update([pad(leftY: -20000, trigger: 255)], ms(0)), [GamepadCommand.DOWN]);
+      expect(mapper.update([pad(leftY: -20000, trigger: 255)], fastDelay - ms(1)), isEmpty);
+      expect(mapper.update([pad(leftY: -20000, trigger: 255)], fastDelay), [GamepadCommand.DOWN]);
+      expect(mapper.update([pad(leftY: -20000, trigger: 255)], fastDelay + fastInterval), [GamepadCommand.DOWN]);
+      // A trigger pressed less than half way doesn't count, so the usual interval comes back
+      Duration lastRepeat = fastDelay + fastInterval * 2;
+      expect(mapper.update([pad(leftY: -20000, trigger: 100)], lastRepeat), [GamepadCommand.DOWN]);
+      expect(mapper.update([pad(leftY: -20000, trigger: 100)], lastRepeat + fastInterval), isEmpty);
+      expect(mapper.update([pad(leftY: -20000, trigger: 100)], lastRepeat + repeatInterval), [GamepadCommand.DOWN]);
+    });
+
     test('the left stick needs 50% to press and goes under 30% to release', () {
       expect(mapper.update([pad(leftY: -9000)], ms(0)), isEmpty);
       expect(mapper.update([pad(leftY: -16000)], ms(16)), isEmpty);
@@ -90,14 +104,14 @@ void main() {
       expect(mapper.update([pad(rightY: 20000)], ms(96)), [GamepadCommand.SCROLL_UP]);
     });
 
-    test('scrolls faster while a trigger is pressed', () {
+    test('a trigger makes the scroll go further, at the same pace', () {
       expect(mapper.update([pad(rightY: -20000, trigger: 255)], ms(0)), [GamepadCommand.SCROLL_DOWN]);
-      expect(mapper.update([pad(rightY: -20000, trigger: 255)], ms(39)), isEmpty);
-      expect(mapper.update([pad(rightY: -20000, trigger: 255)], ms(40)), [GamepadCommand.SCROLL_DOWN]);
+      expect(mapper.fastScroll, isTrue);
+      expect(mapper.update([pad(rightY: -20000, trigger: 255)], ms(79)), isEmpty);
+      expect(mapper.update([pad(rightY: -20000, trigger: 255)], ms(80)), [GamepadCommand.SCROLL_DOWN]);
       // A trigger pressed less than half way doesn't count
-      expect(mapper.update([pad(rightY: -20000, trigger: 100)], ms(80)), [GamepadCommand.SCROLL_DOWN]);
-      expect(mapper.update([pad(rightY: -20000, trigger: 100)], ms(120)), isEmpty);
-      expect(mapper.update([pad(rightY: -20000, trigger: 100)], ms(160)), [GamepadCommand.SCROLL_DOWN]);
+      expect(mapper.update([pad(rightY: -20000, trigger: 100)], ms(96)), isEmpty);
+      expect(mapper.fastScroll, isFalse);
     });
 
     test('keeps scrolling until the stick goes under 30%', () {

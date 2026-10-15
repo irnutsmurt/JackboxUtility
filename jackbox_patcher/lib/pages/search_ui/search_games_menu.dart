@@ -5,6 +5,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:jackbox_patcher/components/closable_route_with_esc.dart';
 import 'package:jackbox_patcher/components/filters/int_filter_pane_item.dart';
 import 'package:jackbox_patcher/components/pane_item_focus_nodes.dart';
+import 'package:jackbox_patcher/components/pane_page_traversal.dart';
+import 'package:jackbox_patcher/components/row_focus_node.dart';
 import 'package:jackbox_patcher/components/stars_rate.dart';
 import 'package:jackbox_patcher/model/jackbox/game_info/jackbox_game_type.dart';
 import 'package:jackbox_patcher/model/misc/audio/SFXEnum.dart';
@@ -445,12 +447,13 @@ class _SearchGameMenuWidgetState extends State<SearchGameMenuWidget> {
           focusNode: _paneFocusNodes.get("random_game"),
           icon: Icon(FontAwesomeIcons.dice),
           title: Text(TranslationsHelper().appLocalizations!.random_game),
-          body: RandomGameWidget(
+          body: PanePageTraversal(
+              child: RandomGameWidget(
             filter: (UserJackboxPack pack, UserJackboxGame game) =>
                 (showAllPacks || pack.owned) &&
                 (showHidden || !game.hidden) &&
                 _filterGameBasedOnActiveFilters(pack, game),
-          )));
+          ))));
     }
 
     maxSelectableView = 1;
@@ -548,18 +551,10 @@ class _SearchGameMenuWidgetState extends State<SearchGameMenuWidget> {
 ///
 /// The checkbox clearing the filters is inside the Filter item, so for the arrows and the controller it's never on
 /// its right: it's selected by hand when going right from the Filter item.
-class _FilterFocusNode extends FocusNode {
+class _FilterFocusNode extends RowFocusNode {
   _FilterFocusNode() : super(debugLabel: "Filter");
 
+  /// The checkbox clearing the filters, only there while a filter is activated
   @override
-  bool focusInDirection(TraversalDirection direction) {
-    FocusNode? clearFiltersNode = traversalDescendants.firstOrNull;
-    if (direction == TraversalDirection.right && clearFiltersNode != null) {
-      // This move isn't known by the traversal policy, its history of the last moves would bring the focus back here
-      FocusTraversalGroup.of(context!).invalidateScopeData(nearestScope!);
-      clearFiltersNode.requestFocus();
-      return true;
-    }
-    return super.focusInDirection(direction);
-  }
+  FocusNode? get right => traversalDescendants.firstOrNull;
 }
