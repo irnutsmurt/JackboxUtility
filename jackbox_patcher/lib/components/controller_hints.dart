@@ -59,6 +59,7 @@ class _ControllerHintsState extends State<ControllerHints> {
             _buildHint(["xbox_lb", "xbox_rb"], appLocalizations.controller_hint_switch_game, outlined: true),
           _buildHint(["xbox_right_stick"], appLocalizations.controller_hint_scroll),
           _buildHint(["xbox_lt", "xbox_rt"], appLocalizations.controller_hint_faster, outlined: true),
+          _buildHint(["xbox_view"], appLocalizations.controller_hint_hide_buttons, outlined: true),
         ]));
   }
 

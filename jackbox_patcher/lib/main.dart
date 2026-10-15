@@ -58,11 +58,21 @@ class MyApp extends StatelessWidget {
                   // The column is always there, so the pages aren't rebuilt when a controller is connected
                   child: Column(children: [
                     Expanded(child: child!),
-                    // What the controller buttons do, hidden while the keyboard or the mouse is used
-                    ValueListenableBuilder<bool>(
-                        valueListenable: GamepadService().controllerInUse,
-                        builder: (context, controllerInUse, _) {
-                          return controllerInUse ? const ControllerHints() : const SizedBox(height: 0);
+                    // What the controller buttons do, hidden while the keyboard or the mouse is used (or by a setting)
+                    ListenableBuilder(
+                        listenable:
+                            Listenable.merge([GamepadService().controllerInUse, GamepadService().buttonBarEnabled]),
+                        builder: (context, _) {
+                          bool visible =
+                              GamepadService().controllerInUse.value && GamepadService().buttonBarEnabled.value;
+                          // It slides in and out at the bottom of the app
+                          return ClipRect(
+                              child: AnimatedAlign(
+                                  alignment: Alignment.topCenter,
+                                  heightFactor: visible ? 1 : 0,
+                                  duration: GamepadService.buttonBarSlideDuration,
+                                  curve: Curves.easeInOut,
+                                  child: ExcludeSemantics(excluding: !visible, child: const ControllerHints())));
                         }),
                   ]));
             });

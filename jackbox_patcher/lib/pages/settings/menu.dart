@@ -52,7 +52,7 @@ class _ParametersMenuWidgetState extends State<ParametersMenuWidget> {
   Widget build(BuildContext context) {
     Typography typography = FluentTheme.of(context).typography;
     return ClosableRouteWithEsc(
-        child: NavigationView(
+        child: PaneTraversal(child: NavigationView(
       transitionBuilder: (child, animation) {
         return FadeTransition(
           opacity: animation,
@@ -111,6 +111,6 @@ class _ParametersMenuWidgetState extends State<ParametersMenuWidget> {
               body: const PanePageTraversal(child: AppInfoWidget()),
             )
           ]),
-    ));
+    )));
   }
 }

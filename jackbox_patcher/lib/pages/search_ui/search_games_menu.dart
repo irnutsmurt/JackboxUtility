@@ -77,7 +77,7 @@ class _SearchGameMenuWidgetState extends State<SearchGameMenuWidget> {
     Typography typography = FluentTheme.of(context).typography;
     return ClosableRouteWithEsc(
         closeSFX: true,
-        child: NavigationView(
+        child: PaneTraversal(child: NavigationView(
           appBar: NavigationAppBar(
               automaticallyImplyLeading: false,
               leading: GestureDetector(
@@ -196,7 +196,7 @@ class _SearchGameMenuWidgetState extends State<SearchGameMenuWidget> {
                     },
                   )
               ]),
-        ));
+        )));
   }
 
   List<NavigationPaneItem> _buildGameFilterPaneItems() {

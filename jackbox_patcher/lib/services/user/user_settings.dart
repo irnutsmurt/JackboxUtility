@@ -47,4 +47,11 @@ class UserSettings {
     await preferences.setBool("controller_support", activation);
     activation ? GamepadService().init() : GamepadService().stop();
   }
+
+  bool get isControllerButtonBarActivated => preferences.getBool("controller_button_bar") ?? true;
+
+  Future<void> setControllerButtonBar(bool activation) async {
+    await preferences.setBool("controller_button_bar", activation);
+    GamepadService().setButtonBarEnabled(activation);
+  }
 }

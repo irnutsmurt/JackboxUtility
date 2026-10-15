@@ -66,6 +66,9 @@ class InitialLoad {
     callback(step: 2, percent: 0);
     try {
       await _loadSettings();
+      // The bar of the controller buttons can be hidden in the settings, or with the View button
+      GamepadService().buttonBarEnabled.value = UserData().settings.isControllerButtonBarActivated;
+      GamepadService().onButtonBarToggled = UserData().settings.setControllerButtonBar;
       // Started before loading from the server, so the controller also works if the loading fails
       if (UserData().settings.isControllerSupportActivated) {
         GamepadService().init();

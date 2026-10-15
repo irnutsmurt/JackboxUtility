@@ -9,6 +9,7 @@ void main() {
     expect(XINPUT_GAMEPAD_DPAD_DOWN, GamepadButtons.dpadDown);
     expect(XINPUT_GAMEPAD_DPAD_LEFT, GamepadButtons.dpadLeft);
     expect(XINPUT_GAMEPAD_DPAD_RIGHT, GamepadButtons.dpadRight);
+    expect(XINPUT_GAMEPAD_BACK, GamepadButtons.view);
     expect(XINPUT_GAMEPAD_LEFT_SHOULDER, GamepadButtons.leftShoulder);
     expect(XINPUT_GAMEPAD_RIGHT_SHOULDER, GamepadButtons.rightShoulder);
     expect(XINPUT_GAMEPAD_A, GamepadButtons.a);

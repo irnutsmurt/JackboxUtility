@@ -54,6 +54,9 @@ class GamepadService {
   /// ends and the page scrolls continuously while the stick is held
   static const Duration fastScrollDuration = Duration(milliseconds: 100);
 
+  /// Time the bar of the controller buttons takes to slide in or out
+  static const Duration buttonBarSlideDuration = Duration(milliseconds: 150);
+
   /// Usage page of the keyboard keys in [PhysicalKeyboardKey.usbHidUsage]
   static const int keyboardUsagePage = 0x00070000;
 
@@ -64,12 +67,27 @@ class GamepadService {
     GamepadCommand.RIGHT
   ];
 
+  /// The inputs that change the focus or the page, they cancel X while it's held
+  static const List<GamepadCommand> _quickLaunchCancelCommands = [
+    ..._directionCommands,
+    GamepadCommand.ACTIVATE,
+    GamepadCommand.BACK,
+    GamepadCommand.PREVIOUS,
+    GamepadCommand.NEXT
+  ];
+
   /// Whether at least one controller is connected
   final ValueNotifier<bool> padConnected = ValueNotifier(false);
 
   /// Whether the controller is the input in use: one is connected and it was used after the keyboard and the
   /// mouse. Its buttons are only shown then.
   final ValueNotifier<bool> controllerInUse = ValueNotifier(false);
+
+  /// Whether the bar of the controller buttons is shown while the controller is in use (a setting)
+  final ValueNotifier<bool> buttonBarEnabled = ValueNotifier(true);
+
+  /// Saves the setting of the bar when it's shown or hidden with the View button
+  void Function(bool enabled)? onButtonBarToggled;
 
   /// Must be added to the app navigator observers
   final GamepadRouteObserver routeObserver = GamepadRouteObserver();
@@ -84,6 +102,13 @@ class GamepadService {
   Duration _ignoreActivateUntil = Duration.zero;
   Duration? _launchLockedUntil;
   FocusTraversalPolicy? _lastMovePolicy;
+
+  /// Scrolls the focused widget into view again once the bar of the controller buttons slid in
+  Timer? _revealTimer;
+
+  /// The widget X is pressed on, it's launched if it still has the focus when X is released
+  FocusNode? _quickLaunchNode;
+  int _padCount = 0;
 
   factory GamepadService() {
     return _instance;
@@ -123,6 +148,8 @@ class GamepadService {
     _launcherWindow = null;
     HardwareKeyboard.instance.removeHandler(_onKeyEvent);
     GestureBinding.instance.pointerRouter.removeGlobalRoute(_onPointerEvent);
+    _cancelQuickLaunch();
+    _padCount = 0;
     padConnected.value = false;
     _setControllerInUse(false);
   }
@@ -176,20 +203,57 @@ class GamepadService {
     }
   }
 
+  /// Called when the setting of the bar of the controller buttons is changed
+  void setButtonBarEnabled(bool enabled) {
+    if (enabled && !buttonBarEnabled.value && controllerInUse.value) {
+      // Turned on with the controller (A on the setting, or View), the bar makes the page shorter. Not while the
+      // keyboard or the mouse is used: the bar isn't shown, and the focused widget can be far from where the user
+      // scrolled with the mouse.
+      _keepFocusVisibleWithBar();
+    }
+    buttonBarEnabled.value = enabled;
+  }
+
+  /// View shows or hides the bar of the controller buttons, and the setting is saved
+  void _toggleButtonBar() {
+    if (buttonBarEnabled.value && !controllerInUse.value) {
+      // The bar is only hidden because the keyboard or the mouse was used, this press brings it back
+      return;
+    }
+    bool enabled = !buttonBarEnabled.value;
+    setButtonBarEnabled(enabled);
+    onButtonBarToggled?.call(enabled);
+  }
+
   /// [focusMoved] when the input that makes the controller the one in use moved the focus
   void _setControllerInUse(bool inUse, {bool focusMoved = false}) {
     if (inUse && focusMoved && !controllerInUse.value) {
-      // The focus was just scrolled into view, but the bar of the controller buttons takes room at the bottom of
-      // the page once it's built, so it's scrolled into view again then. Only after a move: otherwise the focused
-      // widget can be far from where the user scrolled with the mouse.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        BuildContext? focusedContext = FocusManager.instance.primaryFocus?.context;
-        if (focusedContext != null && focusedContext.mounted) {
-          Scrollable.ensureVisible(focusedContext, alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd);
-        }
-      });
+      // The focus was just scrolled into view, but the bar will take room at the bottom of the page. Only after a
+      // move: otherwise the focused widget can be far from where the user scrolled with the mouse.
+      _keepFocusVisibleWithBar();
     }
     controllerInUse.value = inUse;
+  }
+
+  /// The bar of the controller buttons takes room at the bottom of the page once it slid in, so the focused widget
+  /// is scrolled into view again then
+  void _keepFocusVisibleWithBar() {
+    _revealTimer?.cancel();
+    // A bit longer, the bar only starts sliding at the next frame
+    _revealTimer = Timer(buttonBarSlideDuration + const Duration(milliseconds: 100), () {
+      _revealTimer = null;
+      // Not if the bar isn't shown anymore (e.g. the mouse was used since)
+      if (!controllerInUse.value || !buttonBarEnabled.value) {
+        return;
+      }
+      BuildContext? focusedContext = FocusManager.instance.primaryFocus?.context;
+      if (focusedContext != null && focusedContext.mounted) {
+        Scrollable.ensureVisible(focusedContext,
+            alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeOut);
+      }
+    });
   }
 
   void _schedule(Duration delay) {
@@ -207,6 +271,7 @@ class GamepadService {
         // A game or another app is in front, the controller is theirs
         _wasForeground = false;
         _launchLockedUntil = null;
+        _cancelQuickLaunch();
         _schedule(idlePollInterval);
         return;
       }
@@ -223,6 +288,11 @@ class GamepadService {
         _setControllerInUse(connected);
       }
       padConnected.value = connected;
+      if (pads.length < _padCount) {
+        // The controller holding X may be the one that was disconnected, it doesn't launch the game
+        _cancelQuickLaunch();
+      }
+      _padCount = pads.length;
       commands = _mapper.update(pads, now);
       _schedule(connected ? activePollInterval : idlePollInterval);
     } catch (e) {
@@ -235,6 +305,10 @@ class GamepadService {
     if (now < _ignoreInputUntil) {
       return;
     }
+    if (commands.contains(GamepadCommand.TOGGLE_BUTTON_BAR)) {
+      // Before the controller is in use again, the bar was hidden or not
+      _toggleButtonBar();
+    }
     if (commands.isNotEmpty) {
       _setControllerInUse(true, focusMoved: commands.any(_directionCommands.contains));
     }
@@ -246,6 +320,10 @@ class GamepadService {
 
   /// Send the [command] to the focused widget, like a keyboard shortcut would
   void _dispatch(GamepadCommand command, Duration now) {
+    if (_quickLaunchCancelCommands.contains(command)) {
+      // Like moving the mouse away from a button before releasing it, the game X is held on isn't launched
+      _cancelQuickLaunch();
+    }
     FocusNode? focusedNode = FocusManager.instance.primaryFocus;
     BuildContext? focusedContext = focusedNode?.context;
     if (focusedNode == null || focusedContext == null || focusedNode == FocusManager.instance.rootScope) {
@@ -285,11 +363,20 @@ class GamepadService {
           Actions.maybeInvoke(focusedContext, const ActivateIntent());
         }
         break;
-      case GamepadCommand.QUICK_LAUNCH:
+      case GamepadCommand.QUICK_LAUNCH_PRESS:
         if (_isActivateIgnored(now)) {
           return;
         }
-        Actions.maybeInvoke(focusedContext, const QuickLaunchIntent());
+        _quickLaunchNode = focusedNode;
+        Actions.maybeInvoke(focusedContext, const QuickLaunchIntent(QuickLaunchStep.PRESS));
+        break;
+      case GamepadCommand.QUICK_LAUNCH_RELEASE:
+        // Like a button, the game is only launched if X is released on it (it isn't shown pushed in anymore if it
+        // lost the focus)
+        if (focusedNode == _quickLaunchNode) {
+          Actions.maybeInvoke(focusedContext, const QuickLaunchIntent(QuickLaunchStep.RELEASE));
+        }
+        _quickLaunchNode = null;
         break;
       case GamepadCommand.BACK:
         Actions.maybeInvoke(focusedContext, const DismissIntent());
@@ -306,6 +393,19 @@ class GamepadService {
       case GamepadCommand.SCROLL_DOWN:
         _scroll(focusedNode, focusedContext, AxisDirection.down);
         break;
+      case GamepadCommand.TOGGLE_BUTTON_BAR:
+        // Already done in _tick, it doesn't depend on the focus
+        break;
+    }
+  }
+
+  /// X won't be released on the widget it was pressed on (e.g. the app isn't in front anymore), so it isn't shown
+  /// pushed in anymore
+  void _cancelQuickLaunch() {
+    BuildContext? context = _quickLaunchNode?.context;
+    _quickLaunchNode = null;
+    if (context != null && context.mounted) {
+      Actions.maybeInvoke(context, const QuickLaunchIntent(QuickLaunchStep.CANCEL));
     }
   }
 
@@ -332,6 +432,9 @@ class GamepadService {
   }
 
   void _scroll(FocusNode focusedNode, BuildContext focusedContext, AxisDirection direction) {
+    // The page is scrolled away from the focused widget, it isn't scrolled back to it once the bar slid in
+    _revealTimer?.cancel();
+    _revealTimer = null;
     if (focusedNode is FocusScopeNode) {
       // Only the page or the dialog itself is focused and its scrollable is below it, so nothing can be scrolled
       // yet: select its first control instead, like A does

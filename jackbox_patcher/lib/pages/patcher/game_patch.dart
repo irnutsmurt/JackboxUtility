@@ -1,6 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:flutter/services.dart';
 import 'package:jackbox_patcher/components/dialogs/download_patch_dialog.dart';
 import 'package:jackbox_patcher/model/jackbox/jackbox_game.dart';
 import 'package:jackbox_patcher/model/jackbox/jackbox_game_patch.dart';
@@ -9,11 +8,10 @@ import 'package:jackbox_patcher/model/user_model/user_jackbox_game_patch.dart';
 import 'package:jackbox_patcher/model/user_model/user_jackbox_pack_patch.dart';
 import 'package:jackbox_patcher/pages/game_ui/gameinfo_view_model.dart';
 import 'package:jackbox_patcher/services/error/error.dart';
-import 'package:jackbox_patcher/services/gamepad/gamepad_intents.dart';
-import 'package:jackbox_patcher/services/gamepad/gamepad_service.dart';
 import 'package:jackbox_patcher/services/launcher/launcher.dart';
 
 import '../../components/focusable_tap.dart';
+import '../../components/quick_launch_area.dart';
 import '../../model/user_model/user_jackbox_game.dart';
 import '../../model/user_model/user_jackbox_pack.dart';
 import '../../services/api_utility/api_service.dart';
@@ -400,26 +398,25 @@ class _GameImageWithOpenerState extends State<GameImageWithOpener> {
         child: Padding(
             padding: const EdgeInsets.all(8),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              FocusableTap(
-                  onPressed: () => Navigator.pushNamed(context, "/game",
-                      arguments: [widget.pack, widget.game, true, [(g: widget.game, p: widget.pack)]]),
-                  // Show the description when it's focused with the keyboard or a controller, like on mouse hover
-                  onFocusChange: (bool value) => setState(() {
-                        focused = value;
-                      }),
-                  // X on a controller launches the game, like a right click
-                  customActions: {
-                    QuickLaunchIntent: CallbackAction<QuickLaunchIntent>(onInvoke: (intent) => _quickLaunch())
-                  },
-                  // Same with Space on the keyboard, once per press
-                  shortcuts: const {
-                    SingleActivator(LogicalKeyboardKey.space, includeRepeats: false): QuickLaunchIntent()
-                  },
-                  child: ClipRRect(
+              // X on a controller (or Space on the keyboard) launches the game, like a right click
+              QuickLaunchArea(
+                  onLaunch: _launchGame,
+                  child: FocusableTap(
+                      onPressed: () => Navigator.pushNamed(context, "/game",
+                          arguments: [widget.pack, widget.game, true, [(g: widget.game, p: widget.pack)]]),
+                      // Show the description when it's focused with the keyboard or a controller, like on mouse hover
+                      onFocusChange: (bool value) => setState(() {
+                            focused = value;
+                          }),
+                      // Pushed in while X or Space is held, then launching
+                      child: QuickLaunchFeedback(
+                          pushedScale: 0.95,
+                          child: ClipRRect(
                   borderRadius: BorderRadius.circular(8.0),
                   child: IntrinsicWidth(
-                      child: GestureDetector(
-                          onSecondaryTap: _launchGame,
+                      child: Builder(
+                          builder: (context) => GestureDetector(
+                          onSecondaryTap: QuickLaunchArea.of(context).launch,
                           child: MouseRegion(
                               onEnter: (a) => setState(() {
                                     playButtonVisible = true;
@@ -448,6 +445,10 @@ class _GameImageWithOpenerState extends State<GameImageWithOpener> {
                                       ),
                                       duration: const Duration(milliseconds: 200),
                                       builder: (BuildContext context, double opacity, Widget? child) {
+                                        // Only the progress ring is shown on it while it's launching
+                                        if (QuickLaunchArea.of(context).launching) {
+                                          return const SizedBox();
+                                        }
                                         return Column(
                                           mainAxisAlignment: MainAxisAlignment.center,
                                           children: [
@@ -466,20 +467,15 @@ class _GameImageWithOpenerState extends State<GameImageWithOpener> {
                                         );
                                       }),
                                 )
-                              ]))))))
+                              ])))))))))
             ])));
   }
 
-  /// X on a controller or Space on the keyboard, ignored while a game is already launching
-  void _quickLaunch() {
-    if (!GamepadService().isLaunchLocked) {
-      _launchGame();
-    }
-  }
-
-  void _launchGame() {
-    Launcher.launchGame(widget.pack, widget.game)
-        .then((value) => setState(() {}))
-        .catchError((e) => InfoBarService.showError(context, e.toString()));
+  Future<void> _launchGame() {
+    return Launcher.launchGame(widget.pack, widget.game).then((value) => setState(() {})).catchError((e) {
+      InfoBarService.showError(context, e.toString());
+      // Still failed, so the game isn't shown launching anymore
+      throw e;
+    });
   }
 }

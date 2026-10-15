@@ -12,9 +12,7 @@ class FocusableTap extends StatelessWidget {
       this.onFocusChange,
       this.autofocus = false,
       this.focusNode,
-      this.focusStyle,
-      this.customActions,
-      this.shortcuts});
+      this.focusStyle});
 
   final Widget child;
   final void Function()? onPressed;
@@ -25,12 +23,6 @@ class FocusableTap extends StatelessWidget {
   /// Changes the focus border of the app theme for this widget (e.g. without the glow)
   final FocusThemeData? focusStyle;
 
-  /// Other intents handled while it's focused (e.g. a controller button)
-  final Map<Type, Action<Intent>>? customActions;
-
-  /// Keys sending other intents while it's focused
-  final Map<ShortcutActivator, Intent>? shortcuts;
-
   @override
   Widget build(BuildContext context) {
     return HoverButton(
@@ -38,8 +30,6 @@ class FocusableTap extends StatelessWidget {
         onFocusChange: onFocusChange,
         autofocus: autofocus,
         focusNode: focusNode,
-        customActions: customActions,
-        shortcuts: shortcuts,
         builder: (context, states) {
           return FocusBorder(focused: states.isFocused, style: focusStyle, child: child);
         });

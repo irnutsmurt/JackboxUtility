@@ -2,8 +2,8 @@
 
 Used by the controller support (button hints and quick launch icon). They are
 120 px PNG renders, made by Wikimedia Commons, of the SVG files below. The app
-shows the LB, RB, LT and RT images in the color of the text. These images are
-licensed under CC BY-SA 4.0, not under the GPL-3.0 of the rest of the
+shows the LB, RB, LT, RT and View images in the color of the text. These images
+are licensed under CC BY-SA 4.0, not under the GPL-3.0 of the rest of the
 repository.
 
 | File | Source | Author | License |
@@ -17,6 +17,7 @@ repository.
 | xbox_rb.png | https://commons.wikimedia.org/wiki/File:Xbox_RB_bumper.svg | Mliu92 | CC BY-SA 4.0 |
 | xbox_lt.png | https://commons.wikimedia.org/wiki/File:Xbox_LT_trigger.svg | Mliu92 | CC BY-SA 4.0 |
 | xbox_rt.png | https://commons.wikimedia.org/wiki/File:Xbox_RT_trigger.svg | Mliu92 | CC BY-SA 4.0 |
+| xbox_view.png | https://commons.wikimedia.org/wiki/File:Xbox_View_button.svg | Mliu92 | CC BY-SA 4.0 (also tagged PD-textlogo on Commons) |
 
 CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/
 

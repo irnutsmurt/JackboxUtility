@@ -28,10 +28,33 @@ void main() {
 
     test('B, X, LB and RB are mapped', () {
       expect(mapper.update([pad(buttons: GamepadButtons.b)], ms(0)), [GamepadCommand.BACK]);
-      expect(mapper.update([pad(buttons: GamepadButtons.x)], ms(8)), [GamepadCommand.QUICK_LAUNCH]);
+      expect(mapper.update([pad(buttons: GamepadButtons.x)], ms(8)), [GamepadCommand.QUICK_LAUNCH_PRESS]);
       expect(
           mapper.update([pad(buttons: GamepadButtons.leftShoulder | GamepadButtons.rightShoulder)], ms(16)),
-          [GamepadCommand.PREVIOUS, GamepadCommand.NEXT]);
+          [GamepadCommand.PREVIOUS, GamepadCommand.NEXT, GamepadCommand.QUICK_LAUNCH_RELEASE]);
+    });
+
+    test('View shows or hides the bar of the buttons, once per press', () {
+      expect(mapper.update([pad(buttons: GamepadButtons.view)], ms(0)), [GamepadCommand.TOGGLE_BUTTON_BAR]);
+      expect(mapper.update([pad(buttons: GamepadButtons.view)], ms(1000)), isEmpty);
+      expect(mapper.update([pad()], ms(1016)), isEmpty);
+    });
+
+    test('X also fires when it\'s released, like a button on screen', () {
+      expect(mapper.update([pad(buttons: GamepadButtons.x)], ms(0)), [GamepadCommand.QUICK_LAUNCH_PRESS]);
+      expect(mapper.update([pad(buttons: GamepadButtons.x)], ms(16)), isEmpty);
+      expect(mapper.update([pad()], ms(32)), [GamepadCommand.QUICK_LAUNCH_RELEASE]);
+      expect(mapper.update([pad()], ms(48)), isEmpty);
+      // Released while another button is pressed
+      expect(mapper.update([pad(buttons: GamepadButtons.x)], ms(64)), [GamepadCommand.QUICK_LAUNCH_PRESS]);
+      expect(mapper.update([pad(buttons: GamepadButtons.a)], ms(80)),
+          [GamepadCommand.ACTIVATE, GamepadCommand.QUICK_LAUNCH_RELEASE]);
+    });
+
+    test('X is released after the directions, so a direction at the same time cancels it first', () {
+      expect(mapper.update([pad(buttons: GamepadButtons.x)], ms(0)), [GamepadCommand.QUICK_LAUNCH_PRESS]);
+      expect(mapper.update([pad(buttons: GamepadButtons.dpadUp)], ms(16)),
+          [GamepadCommand.UP, GamepadCommand.QUICK_LAUNCH_RELEASE]);
     });
   });
 
@@ -123,6 +146,14 @@ void main() {
   });
 
   group('Rebase', () {
+    test('X held when rebasing isn\'t released either', () {
+      expect(mapper.update([pad(buttons: GamepadButtons.x)], ms(0)), [GamepadCommand.QUICK_LAUNCH_PRESS]);
+      mapper.rebase();
+      expect(mapper.update([pad(buttons: GamepadButtons.x)], ms(16)), isEmpty);
+      expect(mapper.update([pad()], ms(32)), isEmpty);
+      expect(mapper.update([pad(buttons: GamepadButtons.x)], ms(48)), [GamepadCommand.QUICK_LAUNCH_PRESS]);
+    });
+
     test('a button held when rebasing only counts once released', () {
       expect(mapper.update([pad(buttons: GamepadButtons.b)], ms(0)), [GamepadCommand.BACK]);
       mapper.rebase();

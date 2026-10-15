@@ -1564,8 +1564,20 @@ abstract class AppLocalizations {
   /// No description provided for @settings_controller_support_description.
   ///
   /// In en, this message translates to:
-  /// **'Navigate the app with an Xbox controller: left stick or D-pad to move, A to select, B to go back, X to launch the selected game, LB and RB to switch games, right stick to scroll. Hold a trigger to move or scroll faster.'**
+  /// **'Lets you navigate the app with an Xbox controller.'**
   String get settings_controller_support_description;
+
+  /// No description provided for @settings_controller_button_bar_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Controller Buttons'**
+  String get settings_controller_button_bar_title;
+
+  /// No description provided for @settings_controller_button_bar_description.
+  ///
+  /// In en, this message translates to:
+  /// **'Shows the controller buttons at the bottom. Press View to show or hide them.'**
+  String get settings_controller_button_bar_description;
 
   /// No description provided for @controller_hint_move.
   ///
@@ -1602,6 +1614,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Move / Scroll Faster'**
   String get controller_hint_faster;
+
+  /// No description provided for @controller_hint_hide_buttons.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Buttons'**
+  String get controller_hint_hide_buttons;
 }
 
 class _AppLocalizationsDelegate

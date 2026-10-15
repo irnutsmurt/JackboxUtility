@@ -1,6 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:jackbox_patcher/model/misc/sort_order.dart';
@@ -8,13 +7,13 @@ import 'package:jackbox_patcher/model/user_model/user_jackbox_game.dart';
 import 'package:jackbox_patcher/model/user_model/user_jackbox_pack.dart';
 import 'package:jackbox_patcher/services/api_utility/api_service.dart';
 import 'package:jackbox_patcher/services/audio/sfx_service.dart';
-import 'package:jackbox_patcher/services/gamepad/gamepad_intents.dart';
 import 'package:jackbox_patcher/services/gamepad/gamepad_service.dart';
 import 'package:jackbox_patcher/services/user/user_data.dart';
 
 import '../../components/closable_route_with_esc.dart';
 import '../../components/focusable_tap.dart';
 import '../../components/pane_page_traversal.dart';
+import '../../components/quick_launch_area.dart';
 import '../../components/stars_rate.dart';
 import '../../model/misc/audio/SFXEnum.dart';
 import '../../services/discord/discord_service.dart';
@@ -489,28 +488,25 @@ class _SearchGameGameWidgetState extends State<SearchGameGameWidget> {
     var gameInfo = widget.game.game.info;
     return MouseRegion(
         cursor: SystemMouseCursors.click,
-        child: FocusableTap(
-            autofocus: widget.autofocus,
-            onPressed: _openGame,
-            // No glow: it would tint the whole banner in blue, and the game info already shows that it's focused
-            focusStyle: const FocusThemeData(glowFactor: 0.0),
-            // X on a controller launches the focused game without opening its page, like its small play button
-            customActions: widget.pack.owned
-                ? {QuickLaunchIntent: CallbackAction<QuickLaunchIntent>(onInvoke: (intent) => _quickLaunch())}
-                : null,
-            // Same with Space on the keyboard (Enter opens the game page), once per press
-            shortcuts: widget.pack.owned
-                ? const {SingleActivator(LogicalKeyboardKey.space, includeRepeats: false): QuickLaunchIntent()}
-                : null,
-            // Show the game info when it's focused with the keyboard or a controller, like on mouse hover
-            onFocusChange: (bool value) => setState(() {
-                  isFirstTime = false;
-                  focused = value;
-                  if (value) {
-                    SFXService().playSFX(SFX.HOVER_OVER_BANNER);
-                  }
-                }),
-            child: AspectRatio(
+        // X on a controller (or Space on the keyboard, Enter opens the game page) launches the focused game without
+        // opening its page, like its small play button
+        child: QuickLaunchArea(
+            enabled: widget.pack.owned,
+            onLaunch: _launchGame,
+            child: FocusableTap(
+                autofocus: widget.autofocus,
+                onPressed: _openGame,
+                // No glow: it would tint the whole banner in blue, and the game info already shows that it's focused
+                focusStyle: const FocusThemeData(glowFactor: 0.0),
+                // Show the game info when it's focused with the keyboard or a controller, like on mouse hover
+                onFocusChange: (bool value) => setState(() {
+                      isFirstTime = false;
+                      focused = value;
+                      if (value) {
+                        SFXService().playSFX(SFX.HOVER_OVER_BANNER);
+                      }
+                    }),
+                child: AspectRatio(
           aspectRatio: 2.17,
           child: ClipRRect(
               borderRadius: BorderRadius.circular(8.0),
@@ -621,7 +617,9 @@ class _SearchGameGameWidgetState extends State<SearchGameGameWidget> {
                                                         // launches the focused one) instead of the play button, except
                                                         // another game under the mouse, which shows it to be clicked
                                                         bool showX = controllerInUse && (focused || !smallInfoVisible);
-                                                        return Stack(alignment: Alignment.center, children: [
+                                                        // Pushed in while X or Space is held, then launching
+                                                        return QuickLaunchFeedback(
+                                                            child: Stack(alignment: Alignment.center, children: [
                                                           // Only hidden, without animation, so its green box is never
                                                           // seen around X and a click on X still launches the game
                                                           Opacity(
@@ -634,7 +632,7 @@ class _SearchGameGameWidgetState extends State<SearchGameGameWidget> {
                                                                       ButtonState.all<Color>(Colors.green),
                                                                 ),
                                                                 child: Icon(FontAwesomeIcons.play),
-                                                                onPressed: _launchGame,
+                                                                onPressed: QuickLaunchArea.of(context).launch,
                                                               )),
                                                           if (showX)
                                                             IgnorePointer(
@@ -642,7 +640,7 @@ class _SearchGameGameWidgetState extends State<SearchGameGameWidget> {
                                                                     "assets/images/controller/xbox_button_x.png",
                                                                     // Not taller than the button, so all of X launches
                                                                     height: 26)),
-                                                        ]);
+                                                        ]));
                                                       }))),
                                       ],
                                     )
@@ -651,23 +649,18 @@ class _SearchGameGameWidgetState extends State<SearchGameGameWidget> {
                           ]),
                         );
                   })),
-        )));
-  }
-
-  /// X on a controller or Space on the keyboard, ignored while a game is already launching
-  void _quickLaunch() {
-    if (!GamepadService().isLaunchLocked) {
-      _launchGame();
-    }
+        ))));
   }
 
   /// Launch the game without opening its page, so its patches aren't checked (small play button, or X on a
   /// controller)
-  void _launchGame() {
-    Launcher.launchGame(widget.pack, widget.game).catchError((e) {
+  Future<void> _launchGame() {
+    return Launcher.launchGame(widget.pack, widget.game).catchError((e) {
       if (mounted) {
         InfoBarService.showError(context, e.toString());
       }
+      // Still failed, so the game isn't shown launching anymore
+      throw e;
     });
   }
 

@@ -856,7 +856,14 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get settings_controller_support_description =>
-      'Navigate the app with an Xbox controller: left stick or D-pad to move, A to select, B to go back, X to launch the selected game, LB and RB to switch games, right stick to scroll. Hold a trigger to move or scroll faster.';
+      'Lets you navigate the app with an Xbox controller.';
+
+  @override
+  String get settings_controller_button_bar_title => 'Show Controller Buttons';
+
+  @override
+  String get settings_controller_button_bar_description =>
+      'Shows the controller buttons at the bottom. Press View to show or hide them.';
 
   @override
   String get controller_hint_move => 'Move';
@@ -875,4 +882,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get controller_hint_faster => 'Move / Scroll Faster';
+
+  @override
+  String get controller_hint_hide_buttons => 'Hide Buttons';
 }

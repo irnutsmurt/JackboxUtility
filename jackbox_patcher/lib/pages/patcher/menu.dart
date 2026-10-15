@@ -57,7 +57,7 @@ class _PatcherMenuWidgetState extends State<PatcherMenuWidget> {
       _buildPaneItems();
     }
     return ClosableRouteWithEsc(
-        child: NavigationView(
+        child: PaneTraversal(child: NavigationView(
       transitionBuilder: (child, animation) {
         return FadeTransition(
           opacity: animation,
@@ -100,7 +100,7 @@ class _PatcherMenuWidgetState extends State<PatcherMenuWidget> {
                 },
               )
           ]),
-    ));
+    )));
   }
 
   _changeMenuView(String packId) {

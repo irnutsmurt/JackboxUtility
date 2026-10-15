@@ -14,6 +14,9 @@ class GamepadButtons {
   static const int dpadDown = 0x0002;
   static const int dpadLeft = 0x0004;
   static const int dpadRight = 0x0008;
+
+  /// Back on the Xbox 360 controllers
+  static const int view = 0x0020;
   static const int leftShoulder = 0x0100;
   static const int rightShoulder = 0x0200;
   static const int a = 0x1000;
@@ -22,14 +25,29 @@ class GamepadButtons {
 }
 
 /// Navigation commands sent by a controller
-enum GamepadCommand { UP, DOWN, LEFT, RIGHT, ACTIVATE, BACK, QUICK_LAUNCH, PREVIOUS, NEXT, SCROLL_UP, SCROLL_DOWN }
+enum GamepadCommand {
+  UP,
+  DOWN,
+  LEFT,
+  RIGHT,
+  ACTIVATE,
+  BACK,
+  QUICK_LAUNCH_PRESS,
+  QUICK_LAUNCH_RELEASE,
+  PREVIOUS,
+  NEXT,
+  SCROLL_UP,
+  SCROLL_DOWN,
+  TOGGLE_BUTTON_BAR
+}
 
 /// Turns controller states into navigation commands.
 ///
-/// Buttons fire once per press. Directions (D-pad or left stick) and scrolling
-/// (right stick) fire when pressed, then repeat while they are held. While a
-/// trigger is held, directions repeat faster and the scroll goes further (see
-/// [fastScroll]).
+/// Buttons fire once per press, and X also fires when it's released (it works
+/// like a button on screen, see QuickLaunchArea). Directions (D-pad or left
+/// stick) and scrolling (right stick) fire when pressed, then repeat while they
+/// are held. While a trigger is held, directions repeat faster and the scroll
+/// goes further (see [fastScroll]).
 class GamepadMapper {
   /// A stick counts as pressed above 50% and as released under 30%, so it
   /// doesn't flicker around a single threshold
@@ -49,9 +67,15 @@ class GamepadMapper {
   static const Map<int, GamepadCommand> _buttonCommands = {
     GamepadButtons.a: GamepadCommand.ACTIVATE,
     GamepadButtons.b: GamepadCommand.BACK,
-    GamepadButtons.x: GamepadCommand.QUICK_LAUNCH,
+    GamepadButtons.x: GamepadCommand.QUICK_LAUNCH_PRESS,
     GamepadButtons.leftShoulder: GamepadCommand.PREVIOUS,
     GamepadButtons.rightShoulder: GamepadCommand.NEXT,
+    GamepadButtons.view: GamepadCommand.TOGGLE_BUTTON_BAR,
+  };
+
+  /// Commands of the buttons that also fire when they're released, only after their press was sent
+  static const Map<int, GamepadCommand> _buttonReleaseCommands = {
+    GamepadButtons.x: GamepadCommand.QUICK_LAUNCH_RELEASE,
   };
 
   static const Map<GamepadCommand, int> _dpadDirectionButtons = {
@@ -65,6 +89,9 @@ class GamepadMapper {
       GamepadButtons.dpadUp | GamepadButtons.dpadDown | GamepadButtons.dpadLeft | GamepadButtons.dpadRight;
 
   int _previousButtons = 0;
+
+  /// Buttons held since their press was sent
+  int _pressedButtons = 0;
 
   GamepadCommand? _heldDirection;
   bool _directionFromStick = false;
@@ -121,6 +148,7 @@ class GamepadMapper {
     if (_rebasePending) {
       _rebasePending = false;
       _previousButtons = buttons;
+      _pressedButtons = 0;
       _heldDirection = direction;
       _directionFromStick = directionFromStick;
       _directionBlocked = direction != null;
@@ -132,7 +160,9 @@ class GamepadMapper {
     List<GamepadCommand> commands = [];
 
     int pressedButtons = buttons & ~_previousButtons;
+    int releasedButtons = _pressedButtons & ~buttons;
     _previousButtons = buttons;
+    _pressedButtons = (_pressedButtons & buttons) | pressedButtons;
     _buttonCommands.forEach((int button, GamepadCommand command) {
       if ((pressedButtons & button) != 0) {
         commands.add(command);
@@ -164,12 +194,21 @@ class GamepadMapper {
       _nextScrollRepeat = now + scrollRepeatInterval;
     }
 
+    // Sent last: a direction or another button pressed at the same time cancels X first (see GamepadService), like
+    // moving the mouse away from a button before releasing it
+    _buttonReleaseCommands.forEach((int button, GamepadCommand command) {
+      if ((releasedButtons & button) != 0) {
+        commands.add(command);
+      }
+    });
+
     return commands;
   }
 
   /// Forget every held input (e.g. when every controller is disconnected)
   void _reset() {
     _previousButtons = 0;
+    _pressedButtons = 0;
     _heldDirection = null;
     _directionFromStick = false;
     _directionBlocked = false;
